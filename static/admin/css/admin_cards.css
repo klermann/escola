@@ -1,0 +1,98 @@
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    padding: 20px;
+}
+
+.app-card {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.app-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.app-header {
+    background: #4a6fa5;
+    color: white;
+    padding: 15px 20px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.app-models {
+    padding: 15px;
+}
+
+.model-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.model-card:last-child {
+    border-bottom: none;
+}
+
+.model-name a {
+    color: #2c5282;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.model-name a:hover {
+    text-decoration: underline;
+}
+
+.model-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-btn, .change-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.add-btn {
+    background-color: #e6ffed;
+    color: #2d7844;
+}
+
+.add-btn:hover {
+    background-color: #c6f6d5;
+}
+
+.change-btn {
+    background-color: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.change-btn:hover {
+    background-color: #bee3f8;
+}
+
+.separator {
+    color: #e2e8f0;
+    user-select: none;
+}
+
+.icon {
+    font-weight: bold;
+}

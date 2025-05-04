@@ -42,6 +42,11 @@ class AlunoAdmin(admin.ModelAdmin):
     list_per_page = 10
     date_hierarchy = 'data_nascimento'
     ordering = ('nome',)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicione um novo aluno ou clique em um para modificar'
+        return super().changelist_view(request, extra_context=extra_context)
         
 #############################################################################
 #############################################################################
@@ -237,7 +242,7 @@ class FrequenciaAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         context = {
             **self.admin_site.each_context(request),
-            # 'title': 'Selecione uma Turma para Registrar Frequência',
+            'title': 'Selecione uma Turma para Registrar Frequência',
             'turmas': Turma.objects.all().order_by('nome'),
             'opts': self.model._meta,
             'app_label': self.model._meta.app_label,
@@ -476,6 +481,12 @@ class TurmaAdmin(admin.ModelAdmin):
                 "Erros encontrados:<br>" + "<br>".join(error_messages),
                 extra_tags='safe'
             )
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Crie uma turma nova, insira alunos em uma turma, edite ou exclua uma'
+        return super().changelist_view(request, extra_context=extra_context)
+
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
         context = self.admin_site.each_context(request)
         # Format data_fechamento for display
@@ -511,6 +522,7 @@ class AvaliacaoAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
+        extra_context['title'] = 'Clique em um card para ver as avaliações'
         extra_context['turmas'] = Turma.objects.all()
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -849,6 +861,11 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
 
         return holidays
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Crie um calendário novo ou visualize e edite um calendário!'
+        return super().changelist_view(request, extra_context=extra_context)
+
     def calendario_view(self, request, periodo_id):
         logger.debug(f"[calendario_view] Iniciando para periodo_id={periodo_id}")
 
@@ -958,6 +975,7 @@ class DisciplinaAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         disciplinas = Disciplina.objects.all()
+        extra_context['title'] = 'Clique em uma disciplina para modificar'
         extra_context['disciplinas'] = disciplinas
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -979,7 +997,9 @@ class BimestreAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         bimestres = Bimestre.objects.all().order_by('-ano_letivo', 'nome')
-        
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicione um novo Bimestre ou clique em um para modificar'
+
         # Criar estrutura de dados que o template espera
         bimestres_by_year = {}
         for bimestre in bimestres:
@@ -1017,6 +1037,12 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
     #search_fields = ('nome',)
     ordering = ('nome',)
     ##change_list_template = 'admin/core/diretoriaensino/change_list.html'
+
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicione uma nova Diretoria ou clique em uma para modificar'
+        return super().changelist_view(request, extra_context=extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1035,6 +1061,11 @@ class DiretorAdmin(admin.ModelAdmin):
     #search_fields = ("nome", "cpf")
     #ordering = ("nome",)
     #change_list_template = 'admin/escola/diretor/change_list.html'
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicione um novo Diretor ou clique em um para modificar'
+        return super().changelist_view(request, extra_context=extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1104,6 +1135,7 @@ class EscolaAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         escolas = Escola.objects.all()
+        extra_context['title'] = 'Clique no editor do card para visualizar ou modificar'
         extra_context['escolas'] = escolas
         return super().changelist_view(request, extra_context=extra_context)
 

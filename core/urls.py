@@ -10,5 +10,7 @@ urlpatterns = [
     path('turma/<int:turma_id>/avaliacao/', views.avaliacao_form, name='avaliacao_form'),
     path('turma/<int:turma_id>/add_alunos/', views.add_alunos_turma, name='add_alunos_turma'),
     path('turma/<int:turma_id>/remove_aluno/<int:aluno_id>/', views.remove_aluno_turma, name='remove_aluno_turma'),
+    path('api/frequencias/', views.api_frequencias, name='api_frequencias'),
+    path('api/frequencias-alunos/', views.api_frequencias_alunos, name='api_frequencias_alunos'),
     path('', views.turma_list, name='turma_list'),  # Mova para o final
 ]

@@ -554,7 +554,7 @@ link:focus,
 }
 
 .navbar-expand-lg .navbar-nav .nav-link {
-  padding: 40px 0px;
+  padding: 46px 10px;
 }
 @media (max-width: 991px) {
   .navbar-expand-lg .navbar-nav .nav-link {

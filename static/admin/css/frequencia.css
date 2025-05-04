@@ -53,7 +53,7 @@
 /* Calendário */
 .calendar-container {
     max-width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
     border: 1px solid #ddd;
     border-radius: 4px;
     overflow: hidden;
@@ -107,11 +107,6 @@
     font-size: 12px;
 }
 
-.calendar-day.selected {
-    background-color: #3afc43;
-    color: white;
-    font-weight: bold;
-}
 .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -141,31 +136,42 @@
 }
 
 .calendar-day.today {
-    background-color: #4a6fa5;
+    border-bottom: 2px solid #4a6fa5;
     font-weight: bold;
     color: #FFF;
 }
 
-
-.calendar-day.letivo {
-    background-color: #8ae5f6; /* Verde claro para dias letivos */
+.calendar-day.selected {
+    background-color: #71a1e8;
+    color: #FFF;
+    font-size: 16px;
+    font-weight:bolder;
+    border: 1px solid #858484;
 }
 
-/* Estilo para dias não letivos (fins de semana e feriados) */
-.calendar-day.non-letivo {
-    background-color: #f5f5f5;
-    color: #999;
+.calendar-day.letivo {
+    /*background-color: rgba(138, 229, 246, 0.34);*/ /* Verde claro para dias letivos */
+}
+
+/* Estilo para dias não letivos */
+.calendar-day.nao-letivo {
+    background-color: #f8f8f8;
+    color: #666;
     cursor: not-allowed;
 }
 
 /* Estilo para feriados */
 .calendar-day.feriado {
-    background-color: #fff0f0;
+    background-color: #fb8282;
+    color: #ffffff;
+    cursor: not-allowed;
 }
 
 /* Estilo para fins de semana */
 .calendar-day.fim-de-semana {
-    background-color: #f0f0f0;
+    background-color: #e6e6e6;
+    color: #666;
+    cursor: not-allowed;
 }
 
 /* Tooltip personalizado */
@@ -188,15 +194,10 @@
     z-index: 100;
 }
 
-.calendar-day.disabled {
-    color: #ccc;
-    cursor: not-allowed;
-    background-color: #f9f9f9;
-}
+
 
 .frequencia-date {
     font-size: 1.1em;
-    margin-top: 10px;
     padding: 8px;
     background-color: #f8f8f8;
     border-radius: 4px;
@@ -295,7 +296,7 @@
 }
 
 .presenca-icon.presenca-selected.N {
-    background-color: #9E9E9E; /* Não Letivo */
+    background-color: #8C8C8C; /* Não Letivo */
     color: white;
 }
 
@@ -398,36 +399,69 @@
     font-size: 13px;
 }
 
-.legend-color {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 1px solid #ddd;
+.calendar-day.P {
+    background-color: #4caf50;
+    color: #FFF;
+} /* Presente */
+.calendar-day.A { background-color: #f44336;
+    color: #FFF; } /* Ausente */
+.calendar-day.J { background-color: #FFC107; } /* Justificado */
+.calendar-day.N { background-color: #8C8C8C;
+    color: #FFF; } /* Não letivo */
+
+.calendar-legend {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #f8f8f8;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
 }
 
-.legend-color.letivo {
-    background-color: #90ee90;
+.calendar-legend h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
 }
 
-.legend-color.non-letivo {
-    background-color: #f5f5f5;
-    color: #999;
+.legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
 }
 
-.legend-color.selected {
-    background-color: #4CAF50;
-}
-
-.legend-color.today {
-    color: #4a6fa5;
-    font-weight: bold;
-    background-color: white;
+.legend-item {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
 }
 
-.legend-color.other-month {
-    background-color: #f9f9f9;
-    color: #ccc;
+.legend-badge {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
 }
+
+.legend-label {
+    color: #555;
+}
+
+/* Cores específicas para cada tipo */
+.legend-badge.letivo { background-color: #ffffff; }
+.legend-badge.nao-letivo { background-color: #d3d3d3; }
+.legend-badge.feriado { background-color: #fb8282; }
+.legend-badge.fim-de-semana { background-color: #e6e6e6; }
+.legend-badge.outro-mes {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+}
+.legend-badge.dia-atual {
+    border-bottom: 2px solid #4a6fa5;
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+}
+.legend-badge.selecionado { background-color: #4CAF50; }

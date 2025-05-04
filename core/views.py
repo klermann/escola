@@ -1,6 +1,5 @@
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Turma, Aluno, Disciplina, Bimestre, Avaliacao
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
@@ -47,8 +46,40 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from .models import Aluno, Avaliacao, Frequencia, Disciplina, Bimestre, Turma
 from site_admin.models import HeroContent, FeatureBlock
+from datetime import datetime, date
 
 logger = logging.getLogger(__name__)
+
+csrf_protect
+@login_required
+def api_frequencias_alunos(request):
+    data = request.GET.get('data')
+    turma_id = request.GET.get('turma_id')
+
+    try:
+        # Converte a string da data para objeto date
+        data_obj = datetime.strptime(data, '%Y-%m-%d').date()
+
+        # Busca todas as frequências para esta data e turma
+        frequencias = Frequencia.objects.filter(
+            data=data_obj,
+            turma_id=turma_id
+        ).values('aluno_id', 'status')
+
+        return JsonResponse(list(frequencias), safe=False)
+
+    except Exception as e:
+        return JsonResponse(
+            {'error': str(e)},
+            status=400
+        )
+
+csrf_protect
+@login_required
+def api_frequencias(request):
+    turma_id = request.GET.get('turma_id')
+    frequencias = Frequencia.objects.filter(turma_id=turma_id).values('data', 'status')
+    return JsonResponse(list(frequencias), safe=False)
 
 @csrf_protect
 @login_required

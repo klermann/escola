@@ -7,411 +7,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/base.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/widgets.css' %}">
-{% comment %}
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/frequencia.css' %}">
-{% endcomment %}
 <style>
-/* Layout Geral */
-#changelist table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#changelist .button {
-    padding: 6px 12px;
-    background-color: #417690;
-    color: white;
-    border-radius: 4px;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-
-#changelist .button:hover {
-    background-color: #205067;
-}
-
-.frequencia-container {
-    display: flex;
-    gap: 30px;
-}
-
-.frequencia-left {
-    flex: 1;
-    max-width: 300px;
-}
-
-.frequencia-right {
-    flex: 2;
-}
-
-.divider {
-    border-top: 1px solid #ddd;
-    margin: 15px 0;
-}
-
-/* Cabeçalho e Metadados */
-.frequencia-header {
-    margin-bottom: 20px;
-}
-
-.frequencia-meta {
-    margin-bottom: 15px;
-    width: 50%;
-}
-
-.frequencia-meta p {
-    margin: 0;
-}
-
-/* Calendário */
-.calendar-container {
-    max-width: 100%;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.calendar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    background-color: #f5f5f5;
-    border-radius: 4px 4px 0 0;
-}
-
-.calendar-header h4 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #333;
-    flex-grow: 1;
-    text-align: center;
-}
-
-.calendar-header button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    color: #666;
-    padding: 6px 8px;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.15s;
-}
-
-.calendar-header button:hover {
-    color: #333;
-    background-color: rgba(175, 175, 175, 0.15);
-}
-
-.calendar-header button .fas {
-    font-size: 14px;
-}
-
-.calendar-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background-color: #f5f5f5;
-    text-align: center;
-    font-weight: bold;
-    padding: 5px 0;
-    font-size: 12px;
-}
-
-.calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    background-color: #e0e0e0;
-}
-
-.calendar-day {
-    padding: 6px;
-    text-align: center;
-    background-color: white;
-    cursor: pointer;
-    min-height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
-
-.calendar-day:hover {
-    background-color: #f0f0f0;
-}
-
-.calendar-day.other-month {
-    color: #ccc;
-    background-color: #f9f9f9;
-}
-
-.calendar-day.today {
-    background-color: #4a6fa5;
-    font-weight: bold;
-    color: #FFF;
-}
-
-.calendar-day.selected {
-    background-color: #3afc43;
-    color: black;
-    font-size: 16px;
-    font-weight:bolder;
-    border: 1px solid #004a9e;
-}
-
-.calendar-day.letivo {
-    background-color: rgba(138, 229, 246, 0.34); /* Verde claro para dias letivos */
-}
-
-/* Estilo para dias não letivos */
-.calendar-day.nao-letivo {
-    background-color: #f8f8f8;
-    color: #666;
-    cursor: not-allowed;
-}
-
-/* Estilo para feriados */
-.calendar-day.feriado {
-    background-color: #ffcccc;
-    color: #666;
-    cursor: not-allowed;
-}
-
-/* Estilo para fins de semana */
-.calendar-day.fim-de-semana {
-    background-color: #e6e6e6;
-    color: #666;
-    cursor: not-allowed;
-}
-
-/* Tooltip personalizado */
-.calendar-day[title] {
-    position: relative;
-}
-
-.calendar-day[title]:hover::after {
-    content: attr(title);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    z-index: 100;
-}
-
-
-
-.frequencia-date {
-    font-size: 1.1em;
-    margin-top: 10px;
-    padding: 8px;
-    background-color: #f8f8f8;
-    border-radius: 4px;
-    text-align: center;
-}
-
-/* Tabela de Frequência */
-.frequencia-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-.frequencia-table th {
-    background-color: #f5f5f5;
-    text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-}
-
-.frequencia-table td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    vertical-align: middle;
-}
-
-.aluno-status {
-    font-size: 0.8em;
-    color: #666;
-    font-style: italic;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.ativo-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background-color: #4CAF50; /* Verde */
-    border-radius: 50%;
-}
-
-.inativo-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background-color: #F44336; /* Vermelho */
-    border-radius: 50%;
-}
-
-/* Ícones de Presença */
-.presenca-options {
-    display: flex;
-    gap: 5px;
-}
-
-.presenca-icon {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    line-height: 20px;
-    border-radius: 50%;
-    text-align: center;
-    font-weight: bold;
-    cursor: pointer;
-    margin: 0 2px;
-    background-color: #d3d3d3;
-    color: white;
-    transition: all 0.2s;
-}
-
-.presenca-icon:hover {
-    transform: scale(1.1);
-}
-
-.presenca-icon.presenca-selected {
-    font-weight: bold;
-    transform: scale(1.2);
-    box-shadow: 0 0 0 2px #2196F3;
-}
-
-.presenca-icon.presenca-selected.P {
-    background-color: #4CAF50; /* Presente */
-    color: white;
-}
-
-.presenca-icon.presenca-selected.A {
-    background-color: #F44336; /* Ausente */
-    color: white;
-}
-
-.presenca-icon.presenca-selected.J {
-    background-color: #FFC107; /* Justificado */
-    color: black;
-}
-
-.presenca-icon.presenca-selected.N {
-    background-color: #9E9E9E; /* Não Letivo */
-    color: white;
-}
-
-/* Ações e Botões */
-.frequencia-actions {
-    margin: 15px 0;
-    display: flex;
-    gap: 20px;
-    align-items: center;
-}
-
-.frequencia-actions label {
-    display: block;
-    margin: 10px 0;
-}
-
-.frequencia-save {
-    text-align: right;
-    flex: 1;
-}
-
-.marcar-todos {
-    display: flex;
-    flex: 2;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.marcar-todos .btn-link {
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.marcar-todos .btn-link:hover {
-    text-decoration: underline;
-    transform: translateY(-1px);
-}
-
-/* Legenda */
-.frequencia-legenda {
-    margin: 20px 0;
-}
-
-.frequencia-legenda ul {
-    margin: 5px 0;
-    padding-left: 20px;
-}
-
-.legenda-linha {
-    display: flex;
-    gap: 15px;
-    margin-top: 5px;
-}
-
-.legenda-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-/* Utilitários */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-}
-
-/* Estilos para a legenda do calendário */
-.calendar-legend {
-    margin-top: 15px;
-    padding: 10px;
-    background-color: #f8f8f8;
-    border-radius: 4px;
-    border: 1px solid #eee;
-}
-
-.calendar-legend h4 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
-    color: #333;
-}
-
-.legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-}
 </style>
 {% endblock %}
 
@@ -427,10 +24,8 @@
 {% block content %}
 <div id="content-main">
     <div class="frequencia-header">
-        <h1>Núcleo: {{ turma.escola.diretoria_ensino|default:"Registro" }}</h1>
-        <div class="frequencia-meta">
-            <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
-        </div>
+        <h1><strong>Escola:</strong> {{ turma.escola.nome }} | <strong>Núcleo:</strong> {{ turma.escola.diretoria_ensino|default:"Registro" }}</h1>
+
     </div>
 
     <div class="divider"></div>
@@ -441,7 +36,7 @@
 
         <div class="frequencia-container">
             <div class="frequencia-left">
-                <div class="form-row">
+                <div class="">
                     <p>Selecione um ou mais dias!</p>
                     <div class="calendar-container">
                         <div class="calendar-header">
@@ -469,30 +64,36 @@
                     <div class="frequencia-date">
                         <strong>Data Selecionada:</strong> {{ data_selecionada|date:"d / m / Y" }}
                     </div>
-
-                    <div class="calendar-legend">
+<div class="calendar-legend">
                         <h4>Legenda do Calendário:</h4>
-                        <div class="legend-items">
+                        <div class="legend-grid">
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #8ae5f6; border-radius: 50%;"></span> Dia Letivo</span>
+                                <span class="legend-badge letivo"></span>
+                                <span class="legend-label">Dia Letivo</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #d3d3d3; border-radius: 50%;"></span> Dia Não Letivo</span>
+                                <span class="legend-badge nao-letivo"></span>
+                                <span class="legend-label">Dia Não Letivo</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #ffcccc; border-radius: 50%;"></span> Feriado</span>
+                                <span class="legend-badge feriado"></span>
+                                <span class="legend-label">Feriado</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #e6e6e6; border-radius: 50%;"></span> Fim de Semana</span>
+                                <span class="legend-badge fim-de-semana"></span>
+                                <span class="legend-label">Fim de Semana</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #ffffff; border: 1px solid #ccc; border-radius: 50%;"></span> Dia de Outro Mês</span>
+                                <span class="legend-badge outro-mes"></span>
+                                <span class="legend-label">Dia de Outro Mês</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #4a6fa5; border-radius: 50%;"></span> Dia Atual</span>
+                                <span class="legend-badge dia-atual"></span>
+                                <span class="legend-label">Dia Atual</span>
                             </div>
                             <div class="legend-item">
-                                <span class="legenda-item"><span style="display: inline-block; width: 10px; height: 10px; background-color: #4CAF50; border-radius: 50%;"></span> Dia Selecionado</span>
+                                <span class="legend-badge selecionado"></span>
+                                <span class="legend-label">Dia Selecionado</span>
                             </div>
                         </div>
                     </div>
@@ -502,12 +103,6 @@
             </div>
 
             <div class="frequencia-right">
-                <div class="frequencia-actions">
-                    <label class="checkbox">
-                        <input type="checkbox" name="mostrar_inativos"> Mostrar Ativos e Inativos
-                    </label>
-                </div>
-
                 <div class="marcar-todos mb-3">
                     <span class="me-2">Marcar todos como:</span>
                     <div class="d-flex align-items-center" style="gap: 10px;">
@@ -568,10 +163,9 @@
                             {% endfor %}
                         </tbody>
                     </table>
-
                     <div class="frequencia-legenda">
-                        <h3>Legenda:</h3>
                         <div class="legenda-linha">
+                            <span class="legenda-item"><strong>Legenda:</strong></span>
                             <span class="legenda-item"><span class="presenca-icon P presenca-selected">P</span> Presente</span>
                             <span class="legenda-item"><span class="presenca-icon A presenca-selected">A</span> Ausente</span>
                             <span class="legenda-item"><span class="presenca-icon J presenca-selected">J</span> Justificado</span>
@@ -584,390 +178,584 @@
     </form>
 </div>
 <script>
-// Retorna true se a data for feriado nacional (exemplo via lista estática ou API)
-async function isFeriado(date) {
-    const ano = date.getFullYear();
-    const feriados = await fetchFeriados(ano);
-    const dataStr = formatDate(date);
-    return feriados.includes(dataStr);
-}
-
-// Busca feriados do ano atual via API externa
-async function fetchFeriados(ano) {
-    try {
-        const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}`);
-        if (!response.ok) throw new Error('Erro ao buscar feriados');
-        const data = await response.json();
-        return data.map(f => f.date); // ['2025-01-01', '2025-04-21', ...]
-    } catch (err) {
-        console.error('Erro buscando feriados:', err);
-        return [];
+    // Retorna true se a data for feriado nacional (exemplo via lista estática ou API)
+    async function isFeriado(date) {
+        const ano = date.getFullYear();
+        const feriados = await fetchFeriados(ano);
+        const dataStr = formatDate(date);
+        return feriados.includes(dataStr);
     }
-}
 
-// Função para verificar se uma data pode ser letiva
-async function isDiaLetivoValido(date) {
-    const isWeekendDay = isWeekend(date);
-    const isFeriadoDay = await isFeriado(date);
-    const isLetivoFromBackend = await isLetivo(date);
-    return !isWeekendDay && !isFeriadoDay && isLetivoFromBackend;
-}
-
-// Função para verificar se é fim de semana (sábado ou domingo)
-function isWeekend(date) {
-    const day = date.getDay();
-    return day === 0 || day === 6; // 0 = Domingo, 6 = Sábado
-}
-
-// Função para buscar dias letivos do backend
-async function fetchDiasLetivos() {
-    try {
-        const response = await fetch('/api/dias-letivos/', {
-            method: 'GET',
-            headers: {
-                'X-CSRFToken': getCsrfToken(),
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) {
-            throw new Error('Erro ao buscar dias letivos: ' + response.status);
+    // Busca feriados do ano atual via API externa
+    async function fetchFeriados(ano) {
+        try {
+            const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}`);
+            if (!response.ok) throw new Error('Erro ao buscar feriados');
+            const data = await response.json();
+            return data.map(f => f.date); // ['2025-01-01', '2025-04-21', ...]
+        } catch (err) {
+            console.error('Erro buscando feriados:', err);
+            return [];
         }
-        const data = await response.json();
-        console.log("Dias letivos recebidos:", data);
-        return data.dias_letivos; // Espera-se um array de objetos { data: "YYYY-MM-DD", status: "L" }
-    } catch (error) {
-        console.error("Erro ao buscar dias letivos:", error);
-        return [];
-    }
-}
-
-// Função auxiliar para obter o token CSRF
-function getCsrfToken() {
-    const cookieValue = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrftoken='))
-        ?.split('=')[1];
-    return cookieValue || '';
-}
-
-// Verifica se uma data é letiva com base nos dados do backend
-async function isLetivo(date) {
-    const diasLetivos = await fetchDiasLetivos();
-    const dateStr = formatDate(date);
-
-    // Verifica se a data está na lista de dias letivos com status 'L'
-    return diasLetivos.some(dia => dia.data === dateStr && dia.status === 'L');
-}
-
-// Formata data como YYYY-MM-DD
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-// Obtém o nome do mês
-function getMonthName(month) {
-    const monthNames = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-    return monthNames[month];
-}
-
-// Renderiza o calendário para um mês específico
-async function renderCalendar(year, month) {
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-
-    const calendarDays = document.querySelector('.calendar-days');
-    calendarDays.innerHTML = '';
-
-    // Exibe o mês e ano no topo
-    document.querySelector('.current-month-year').textContent = `${getMonthName(month)} ${year}`;
-
-    // Obter a data selecionada do campo hidden
-    const selectedDateStr = document.getElementById('selected-date').value;
-    let selectedDate = null;
-
-    if (selectedDateStr) {
-        const [year, month, day] = selectedDateStr.split('-').map(Number);
-        selectedDate = new Date(year, month - 1, day);
-        console.log("Data selecionada para comparação:", selectedDate);
     }
 
-    // Dias da semana do primeiro dia do mês
-    let dayOfWeek = firstDay.getDay();
-
-    // Dias do mês anterior
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = dayOfWeek - 1; i >= 0; i--) {
-        const day = prevMonthLastDay - i;
-        const date = new Date(year, month - 1, day);
-        const dayElement = createDayElement(date, true);
-        calendarDays.appendChild(dayElement);
+    // Função para verificar se uma data pode ser letiva
+    async function isDiaLetivoValido(date) {
+        const isWeekendDay = isWeekend(date);
+        const isFeriadoDay = await isFeriado(date);
+        const isLetivoFromBackend = await isLetivo(date);
+        return !isWeekendDay && !isFeriadoDay && isLetivoFromBackend;
     }
 
-    // Dias do mês atual
-    const today = new Date();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const isToday = date.toDateString() === today.toDateString();
-
-        // Verificar se é a data selecionada
-        const isSelected = selectedDate ? date.toDateString() === selectedDate.toDateString() : false;
-        const letivo = await isLetivo(date);
-
-        console.log(`Dia ${day}:`, date, "Selecionado?", isSelected, "Letivo?", letivo);
-
-        const dayElement = createDayElement(date, false, isToday, isSelected, letivo);
-        calendarDays.appendChild(dayElement);
+    // Função para verificar se é fim de semana (sábado ou domingo)
+    function isWeekend(date) {
+        const day = date.getDay();
+        return day === 0 || day === 6; // 0 = Domingo, 6 = Sábado
     }
 
-    // Dias do próximo mês para completar a grade
-    const daysToAdd = 42 - (dayOfWeek + daysInMonth);
-    for (let day = 1; day <= daysToAdd; day++) {
-        const date = new Date(year, month + 1, day);
-        const dayElement = createDayElement(date, true);
-        calendarDays.appendChild(dayElement);
-    }
-}
-
-// Cria um elemento de dia para o calendário
-function createDayElement(date, isOtherMonth, isToday = false, isSelected = false) {
-    const dayElement = document.createElement('div');
-    dayElement.className = 'calendar-day';
-    dayElement.textContent = date.getDate();
-
-    const dateStr = formatDate(date);
-
-    if (isOtherMonth) {
-        dayElement.classList.add('other-month', 'disabled');
-    } else if (isToday) {
-        dayElement.classList.add('today');
-    }
-
-    if (isSelected) {
-        dayElement.classList.add('selected');
+    // Função para buscar dias letivos do backend
+    async function fetchDiasLetivos() {
+        try {
+            const response = await fetch('/api/dias-letivos/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Erro ao buscar dias letivos: ' + response.status);
+            }
+            const data = await response.json();
+            console.log("Dias letivos recebidos:", data);
+            return data.dias_letivos; // Espera-se um array de objetos { data: "YYYY-MM-DD", status: "L" }
+        } catch (error) {
+            console.error("Erro ao buscar dias letivos:", error);
+            return [];
+        }
     }
 
-    if (!isOtherMonth) {
-        isDiaLetivoValido(date).then(async podeSelecionar => {
-            const fimDeSemana = isWeekend(date);
-            const feriado = await isFeriado(date);
+    // Função auxiliar para obter o token CSRF
+    function getCsrfToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || '';
+    }
+
+    // Verifica se uma data é letiva com base nos dados do backend
+    async function isLetivo(date) {
+        const diasLetivos = await fetchDiasLetivos();
+        const dateStr = formatDate(date);
+
+        // Verifica se a data está na lista de dias letivos com status 'L'
+        return diasLetivos.some(dia => dia.data === dateStr && dia.status === 'L');
+    }
+
+    // Formata data como YYYY-MM-DD
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Obtém o nome do mês
+    function getMonthName(month) {
+        const monthNames = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        return monthNames[month];
+    }
+
+    // Renderiza o calendário para um mês específico
+    async function renderCalendar(year, month) {
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+
+        const calendarDays = document.querySelector('.calendar-days');
+        calendarDays.innerHTML = '';
+
+        // Exibe o mês e ano no topo
+        document.querySelector('.current-month-year').textContent = `${getMonthName(month)} ${year}`;
+
+        // Obter a data selecionada do campo hidden
+        const selectedDateStr = document.getElementById('selected-date').value;
+        let selectedDate = null;
+
+        if (selectedDateStr) {
+            const [year, month, day] = selectedDateStr.split('-').map(Number);
+            selectedDate = new Date(year, month - 1, day);
+            console.log("Data selecionada para comparação:", selectedDate);
+        }
+
+        // Dias da semana do primeiro dia do mês
+        let dayOfWeek = firstDay.getDay();
+
+        // Dias do mês anterior
+        const prevMonthLastDay = new Date(year, month, 0).getDate();
+        for (let i = dayOfWeek - 1; i >= 0; i--) {
+            const day = prevMonthLastDay - i;
+            const date = new Date(year, month - 1, day);
+            const dayElement = createDayElement(date, true);
+            calendarDays.appendChild(dayElement);
+        }
+
+        // Dias do mês atual
+        const today = new Date();
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const isToday = date.toDateString() === today.toDateString();
+
+            // Verificar se é a data selecionada
+            const isSelected = selectedDate ? date.toDateString() === selectedDate.toDateString() : false;
             const letivo = await isLetivo(date);
 
-            if (podeSelecionar) {
-                dayElement.classList.add('letivo');
-                dayElement.addEventListener('click', function () {
-                    document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
-                    dayElement.classList.add('selected');
-                    document.getElementById('selected-date').value = formatDate(date);
-                    document.querySelector('.frequencia-date').textContent =
-                        `${String(date.getDate()).padStart(2, '0')} / ${String(date.getMonth() + 1).padStart(2, '0')} / ${date.getFullYear()}`;
-                });
-            } else {
-                dayElement.classList.add('disabled');
+            console.log(`Dia ${day}:`, date, "Selecionado?", isSelected, "Letivo?", letivo);
 
-                if (feriado) {
-                    dayElement.classList.add('feriado');
-                    dayElement.title = 'Feriado';
-                } else if (fimDeSemana) {
-                    dayElement.classList.add('fim-de-semana');
-                    dayElement.title = 'Fim de semana';
-                } else if (!letivo) {
-                    dayElement.classList.add('nao-letivo');
-                    dayElement.title = 'Dia não letivo';
+            const dayElement = createDayElement(date, false, isToday, isSelected, letivo);
+            calendarDays.appendChild(dayElement);
+        }
+
+        // Dias do próximo mês para completar a grade
+        const daysToAdd = 42 - (dayOfWeek + daysInMonth);
+        for (let day = 1; day <= daysToAdd; day++) {
+            const date = new Date(year, month + 1, day);
+            const dayElement = createDayElement(date, true);
+            calendarDays.appendChild(dayElement);
+        }
+         // Após renderizar os dias, carrega os status do banco
+        await loadPresencasFromDatabase();
+    }
+
+    // Cria um elemento de dia para o calendário
+    function createDayElement(date, isOtherMonth, isToday = false, isSelected = false) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = date.getDate();
+        dayElement.setAttribute('data-date', formatDate(date));
+
+        if (isOtherMonth) {
+            dayElement.classList.add('other-month', 'disabled');
+        } else if (isToday) {
+            dayElement.classList.add('today');
+        }
+
+        if (isSelected) {
+            dayElement.classList.add('selected');
+        }
+
+        if (!isOtherMonth) {
+            isDiaLetivoValido(date).then(async podeSelecionar => {
+                const fimDeSemana = isWeekend(date);
+                const feriado = await isFeriado(date);
+                const letivo = await isLetivo(date);
+
+                if (podeSelecionar) {
+                    dayElement.classList.add('letivo');
+                    dayElement.addEventListener('click', function() {
+                        document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
+                        dayElement.classList.add('selected');
+
+                        const formattedDate = formatDate(date);
+                        document.getElementById('selected-date').value = formattedDate;
+                        document.querySelector('.frequencia-date').textContent =
+                            `${String(date.getDate()).padStart(2, '0')} / ${String(date.getMonth() + 1).padStart(2, '0')} / ${date.getFullYear()}`;
+
+                        // CARREGA OS STATUS DOS ALUNOS PARA A DATA SELECIONADA
+                        loadAlunosStatusForDate(formattedDate);
+                    });
+                } else {
+                    dayElement.classList.add('disabled');
+                    dayElement.addEventListener('click', function() {
+                        // Para dias não letivos, limpa todos os status
+                        clearAllStatus();
+                    });
+
+                    if (feriado) {
+                        dayElement.classList.add('feriado');
+                        dayElement.title = 'Feriado';
+                    } else if (fimDeSemana) {
+                        dayElement.classList.add('fim-de-semana');
+                        dayElement.title = 'Fim de semana';
+                    } else if (!letivo) {
+                        dayElement.classList.add('nao-letivo');
+                        dayElement.title = 'Dia não letivo';
+                    }
                 }
+            });
+        }
+
+        return dayElement;
+    }
+
+    // Função para atualizar a URL sem recarregar
+    function updateUrlWithDate(date) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('data', formatDate(date));
+        window.history.replaceState({}, '', url);
+    }
+
+    // Navegação do calendário
+    let currentDate = new Date();
+    const selectedDateInput = document.getElementById('selected-date');
+
+    if (selectedDateInput.value) {
+        try {
+            const [year, month, day] = selectedDateInput.value.split('-').map(Number);
+            currentDate = new Date(year, month - 1, day);
+            console.log("Data inicial do calendário:", currentDate);
+        } catch (e) {
+            console.error("Erro ao parsear data selecionada:", e);
+        }
+    }
+
+    // Função para atualizar as classes de estilo com base na seleção
+    function updateIconStyles(container) {
+        container.querySelectorAll('.presenca-icon').forEach(icon => {
+            const type = icon.dataset.type;
+            if (icon.classList.contains('presenca-selected')) {
+                icon.classList.remove('P', 'A', 'J', 'N');
+                icon.classList.add(type);
+            } else {
+                icon.classList.remove('P', 'A', 'J', 'N');
             }
         });
     }
 
-    return dayElement;
-}
-
-// Função para atualizar a URL sem recarregar
-function updateUrlWithDate(date) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('data', formatDate(date));
-    window.history.replaceState({}, '', url);
-}
-
-// Navegação do calendário
-let currentDate = new Date();
-const selectedDateInput = document.getElementById('selected-date');
-
-if (selectedDateInput.value) {
-    try {
-        const [year, month, day] = selectedDateInput.value.split('-').map(Number);
-        currentDate = new Date(year, month - 1, day);
-        console.log("Data inicial do calendário:", currentDate);
-    } catch (e) {
-        console.error("Erro ao parsear data selecionada:", e);
-    }
-}
-
-// Função para atualizar as classes de estilo com base na seleção
-function updateIconStyles(container) {
-    container.querySelectorAll('.presenca-icon').forEach(icon => {
-        const type = icon.dataset.type;
-        if (icon.classList.contains('presenca-selected')) {
-            icon.classList.remove('P', 'A', 'J', 'N');
-            icon.classList.add(type);
-        } else {
-            icon.classList.remove('P', 'A', 'J', 'N');
-        }
-    });
-}
-
-// Inicializar estilos ao carregar a página
-document.querySelectorAll('.presenca-options').forEach(container => {
-    updateIconStyles(container);
-});
-
-// Selecionar status para um aluno
-document.querySelectorAll('.presenca-icon').forEach(icon => {
-    icon.addEventListener('click', function() {
-        const container = this.closest('.presenca-options');
-        const status = this.dataset.status;
-        const inputHidden = container.querySelector('input[type="hidden"]');
-
-        container.querySelectorAll('.presenca-icon').forEach(i => {
-            i.classList.remove('presenca-selected');
-        });
-
-        this.classList.add('presenca-selected');
-        inputHidden.value = status;
+    // Inicializar estilos ao carregar a página
+    document.querySelectorAll('.presenca-options').forEach(container => {
         updateIconStyles(container);
     });
-});
 
-// Marcar todos os alunos com um status
-document.querySelectorAll('.marcar-todos-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const status = this.dataset.status;
-        document.querySelectorAll('.presenca-options').forEach(container => {
-            const icon = container.querySelector(`.presenca-icon[data-status="${status}"]`);
+    // Selecionar status para um aluno
+    document.querySelectorAll('.presenca-icon').forEach(icon => {
+        icon.addEventListener('click', function() {
+            const container = this.closest('.presenca-options');
+            const status = this.dataset.status;
             const inputHidden = container.querySelector('input[type="hidden"]');
 
             container.querySelectorAll('.presenca-icon').forEach(i => {
                 i.classList.remove('presenca-selected');
             });
 
-            if (icon) {
-                icon.classList.add('presenca-selected');
-                inputHidden.value = status;
-                updateIconStyles(container);
-            }
+            this.classList.add('presenca-selected');
+            inputHidden.value = status;
+            updateIconStyles(container);
         });
     });
-});
 
-// Enviar formulário
-document.getElementById('frequencia-form').addEventListener('submit', function(e) {
-    e.preventDefault(); // Impede o envio padrão para depuração
+    // Marcar todos os alunos com um status
+    document.querySelectorAll('.marcar-todos-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const status = this.dataset.status;
+            document.querySelectorAll('.presenca-options').forEach(container => {
+                const icon = container.querySelector(`.presenca-icon[data-status="${status}"]`);
+                const inputHidden = container.querySelector('input[type="hidden"]');
 
-    const statusData = {};
-    document.querySelectorAll('.presenca-options').forEach(container => {
-        const alunoId = container.dataset.alunoId;
-        const inputHidden = container.querySelector('input[type="hidden"]');
-        if (inputHidden.value) {
-            statusData[alunoId] = inputHidden.value;
-            // Garante que o campo individual seja atualizado
-            const statusInput = document.querySelector(`input[name="status_${alunoId}"]`);
-            if (statusInput) {
-                statusInput.value = inputHidden.value;
+                container.querySelectorAll('.presenca-icon').forEach(i => {
+                    i.classList.remove('presenca-selected');
+                });
+
+                if (icon) {
+                    icon.classList.add('presenca-selected');
+                    inputHidden.value = status;
+                    updateIconStyles(container);
+                }
+            });
+        });
+    });
+
+    // Enviar formulário
+    document.getElementById('frequencia-form').addEventListener('submit', function(e) {
+        e.preventDefault(); // Impede o envio padrão para depuração
+
+        const statusData = {};
+        document.querySelectorAll('.presenca-options').forEach(container => {
+            const alunoId = container.dataset.alunoId;
+            const inputHidden = container.querySelector('input[type="hidden"]');
+            if (inputHidden.value) {
+                statusData[alunoId] = inputHidden.value;
+                // Garante que o campo individual seja atualizado
+                const statusInput = document.querySelector(`input[name="status_${alunoId}"]`);
+                if (statusInput) {
+                    statusInput.value = inputHidden.value;
+                }
+            }
+        });
+
+        document.getElementById('status-data').value = JSON.stringify(statusData);
+
+        const formData = new FormData(this);
+        console.log("Dados do formulário antes do submit:");
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
+        // Envia o formulário após depuração
+        this.submit();
+    });
+
+    // Função para extrair a data da URL
+    function getDateFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('data');
+        if (dateParam) {
+            try {
+                const [year, month, day] = dateParam.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                if (isNaN(date.getTime())) {
+                    throw new Error("Data inválida");
+                }
+                const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+                console.log("Data da URL ajustada:", adjustedDate);
+                return adjustedDate;
+            } catch (e) {
+                console.error("Erro ao parsear data da URL:", e);
+                return null;
             }
         }
-    });
-
-    document.getElementById('status-data').value = JSON.stringify(statusData);
-
-    const formData = new FormData(this);
-    console.log("Dados do formulário antes do submit:");
-    for (let [key, value] of formData.entries()) {
-        console.log(key, value);
+        return null;
     }
 
-    // Envia o formulário após depuração
-    this.submit();
-});
+    // Inicialização do calendário
+     async function initCalendar() {
+        let currentDate = getDateFromUrl();
 
-// Função para extrair a data da URL
-function getDateFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const dateParam = urlParams.get('data');
-    if (dateParam) {
-        try {
-            const [year, month, day] = dateParam.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
-            if (isNaN(date.getTime())) {
-                throw new Error("Data inválida");
+        if (!currentDate && document.getElementById('selected-date').value) {
+            try {
+                const [year, month, day] = document.getElementById('selected-date').value.split('-').map(Number);
+                currentDate = new Date(year, month - 1, day);
+            } catch (e) {
+                console.error("Erro ao parsear data do campo hidden:", e);
             }
-            const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-            console.log("Data da URL ajustada:", adjustedDate);
-            return adjustedDate;
-        } catch (e) {
-            console.error("Erro ao parsear data da URL:", e);
-            return null;
         }
+
+        if (!currentDate) {
+            currentDate = new Date();
+        }
+
+        console.log("Inicializando calendário com data:", currentDate);
+
+        const formattedDate = formatDate(currentDate);
+        document.getElementById('selected-date').value = formattedDate;
+
+        updateDateDisplay(currentDate);
+        await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        setupCalendarNavigation(currentDate);
+
+        // CARREGA OS STATUS DOS ALUNOS PARA A DATA INICIAL
+        loadAlunosStatusForDate(formattedDate);
     }
-    return null;
-}
 
-// Inicialização do calendário
-async function initCalendar() {
-    let currentDate = getDateFromUrl();
-
-    if (!currentDate && document.getElementById('selected-date').value) {
+    // Nova função para carregar os status dos alunos para a data selecionada
+    async function loadAlunosStatusForDate(selectedDate) {
         try {
-            const [year, month, day] = document.getElementById('selected-date').value.split('-').map(Number);
-            currentDate = new Date(year, month - 1, day);
-        } catch (e) {
-            console.error("Erro ao parsear data do campo hidden:", e);
+            const turmaId = 1; // Substitua pelo ID da turma atual (ou obtenha dinamicamente)
+            const response = await fetch(`/api/frequencias-alunos/?data=${selectedDate}&turma_id=${turmaId}`);
+
+            if (!response.ok) {
+                console.error("Erro ao buscar status dos alunos:", response.status);
+                return;
+            }
+
+            const alunosStatus = await response.json();
+            console.log("Status dos alunos carregados:", alunosStatus);
+
+            // Se não houver registros para esta data, limpa todos os status
+            if (alunosStatus.length === 0) {
+                clearAllStatus();
+                return;
+            }
+
+            // Atualiza os status dos alunos na interface
+            alunosStatus.forEach(alunoStatus => {
+                const container = document.querySelector(`.presenca-options[data-aluno-id="${alunoStatus.aluno_id}"]`);
+                if (container) {
+                    const inputHidden = container.querySelector('input[type="hidden"]');
+                    const icon = container.querySelector(`.presenca-icon[data-status="${alunoStatus.status}"]`);
+
+                    if (icon && inputHidden) {
+                        // Remove seleção de todos os ícones
+                        container.querySelectorAll('.presenca-icon').forEach(i => {
+                            i.classList.remove('presenca-selected');
+                        });
+
+                        // Seleciona o ícone correspondente
+                        icon.classList.add('presenca-selected');
+                        inputHidden.value = alunoStatus.status;
+                        updateIconStyles(container);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Falha ao carregar status dos alunos:", error);
+            // Em caso de erro, também limpa os status
+            clearAllStatus();
         }
     }
 
-    if (!currentDate) {
-        currentDate = new Date();
+    // Adicione esta nova função para limpar todos os status
+    function clearAllStatus() {
+        document.querySelectorAll('.presenca-options').forEach(container => {
+            const inputHidden = container.querySelector('input[type="hidden"]');
+
+            // Remove seleção de todos os ícones
+            container.querySelectorAll('.presenca-icon').forEach(icon => {
+                icon.classList.remove('presenca-selected', 'P', 'A', 'J', 'N');
+            });
+
+            // Limpa o valor do campo hidden
+            inputHidden.value = '';
+        });
+
+        console.log("Status limpos - dia sem registros");
     }
 
-    console.log("Inicializando calendário com data:", currentDate);
+    // Nova função para carregar os status dos alunos para uma data específica
+    async function loadStatusAlunos(date) {
+        try {
+            const turmaId = document.getElementById('turma-id')?.value || 18; // Obtém dinamicamente ou usa 18
+            const response = await fetch(`/api/frequencias/?turma_id=${turmaId}&data=${date}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/json'
+                }
+            });
 
-    const formattedDate = formatDate(currentDate);
-    document.getElementById('selected-date').value = formattedDate;
+            if (!response.ok) {
+                throw new Error('Erro ao buscar frequências: ' + response.status);
+            }
 
-    updateDateDisplay(currentDate);
-    await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-    setupCalendarNavigation(currentDate);
-}
+            const frequencias = await response.json();
+            console.log("Frequências dos alunos para a data", date, ":", frequencias);
 
-// Função auxiliar para atualizar a exibição da data
-function updateDateDisplay(date) {
-    const dateElement = document.querySelector('.frequencia-date');
-    if (dateElement) {
-        dateElement.textContent =
-            `${String(date.getDate()).padStart(2, '0')} / ${String(date.getMonth() + 1).padStart(2, '0')} / ${date.getFullYear()}`;
+            // Limpa os status atuais
+            document.querySelectorAll('.presenca-options').forEach(container => {
+                const inputHidden = container.querySelector('input[type="hidden"]');
+                const icons = container.querySelectorAll('.presenca-icon');
+
+                // Reseta os ícones e o campo hidden
+                icons.forEach(icon => icon.classList.remove('presenca-selected', 'P', 'A', 'J', 'N'));
+                inputHidden.value = '';
+            });
+
+            // Filtra as frequências apenas para a data selecionada
+            const frequenciasFiltradas = frequencias.filter(freq => freq.data === date);
+            console.log("Frequências filtradas para a data", date, ":", frequenciasFiltradas);
+
+            // Mapeia os status da API para os valores esperados pelos ícones
+            const statusMap = {
+                'presente': 'P',
+                'ausente': 'A',
+                'justificado': 'J',
+                'nao_letivo': 'N'
+            };
+
+            // Obtém todos os contêineres de presença (na ordem do HTML)
+            const presencaContainers = document.querySelectorAll('.presenca-options');
+
+            // Atualiza os status com base na ordem dos registros filtrados
+            frequenciasFiltradas.forEach((freq, index) => {
+                const statusApi = freq.status; // Exemplo: "presente"
+                const statusIcon = statusMap[statusApi] || ''; // Converte para "P", "A", etc.
+
+                // Pega o container correspondente ao índice (ordem dos alunos no HTML)
+                const container = presencaContainers[index];
+                console.log("Status mapeado:", statusIcon, "Container encontrado:", container);
+
+                if (container) {
+                    const inputHidden = container.querySelector('input[type="hidden"]');
+                    const icon = container.querySelector(`.presenca-icon[data-status="${statusApi}"]`);
+
+                    if (icon) {
+                        icon.classList.add('presenca-selected', statusIcon);
+                        inputHidden.value = statusApi;
+                        updateIconStyles(container);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar status dos alunos:", error);
+            alert("Não foi possível carregar os status dos alunos para esta data.");
+        }
     }
-}
 
-// Função auxiliar para configurar navegação
-function setupCalendarNavigation(currentDate) {
-    document.querySelector('.prev-month').addEventListener('click', async function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-    });
+    // Função auxiliar para atualizar a exibição da data
+    function updateDateDisplay(date) {
+        const dateElement = document.querySelector('.frequencia-date');
+        if (dateElement) {
+            dateElement.textContent =
+                `${String(date.getDate()).padStart(2, '0')} / ${String(date.getMonth() + 1).padStart(2, '0')} / ${date.getFullYear()}`;
+        }
+    }
 
-    document.querySelector('.next-month').addEventListener('click', async function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-    });
-}
+    // Função auxiliar para configurar navegação
+    function setupCalendarNavigation(currentDate) {
+        document.querySelector('.prev-month').addEventListener('click', async function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
 
-console.log("Script de frequência carregado");
-initCalendar();
+        document.querySelector('.next-month').addEventListener('click', async function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            await renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
+    }
+
+    /**
+     * Carrega os status de frequência do banco de dados e marca os dias no calendário.
+     */
+    async function loadPresencasFromDatabase() {
+        try {
+            const turmaId = 1; // Substitua pelo ID da turma atual (ou obtenha dinamicamente)
+            const response = await fetch(`/api/frequencias/?turma_id=${turmaId}`);
+
+            if (!response.ok) {
+                console.error("Erro ao buscar frequências:", response.status);
+                return;
+            }
+
+            const frequencias = await response.json();
+            console.log("Frequências carregadas:", frequencias);
+
+            // Marca os dias no calendário
+            frequencias.forEach(freq => {
+
+                const date = new Date(freq.data);
+                date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                const dayElement = document.querySelector(`.calendar-day[data-date="${formatDate(date)}"]`);
+
+                if (dayElement) {
+                    // Remove classes antigas (se houver)
+                    dayElement.classList.remove('P', 'A', 'J', 'N');
+
+                    // Adiciona classe conforme o status
+                    const statusClass = {
+                        'presente': 'P',
+                        'ausente': 'A',
+                        'justificado': 'J',
+                        'nao_letivo': 'N'
+                    }[freq.status];
+
+                    if (statusClass) {
+                        dayElement.classList.add(statusClass);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Falha ao carregar frequências:", error);
+        }
+    }
+
+    console.log("Script de frequência carregado");
+    initCalendar();
+
 </script>
 {% endblock %}

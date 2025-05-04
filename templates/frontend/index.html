@@ -39,12 +39,13 @@
           {% for block in feature_blocks %}
           <div class="col-sm-6 col-xl-5 mb-xl-5 mb-lg-3 mb-4 text-center text-sm-left">
             <i class="{{ block.icon }} mb-xl-4 mb-lg-3 mb-4 feature-icon"></i>
+            <i class="{{ block.icon }} mb-xl-4 mb-lg-3 mb-4 feature-icon"></i>
             <h3 class="mb-xl-4 mb-lg-3 mb-4">{{ block.title }}</h3>
             <p>{{ block.description }}</p>
           </div>
           {% empty %}
           <div class="col-12">
-            <p>Nenhum bloco de recurso configurado. Adicione via admin.</p>
+            <p>Nenhum bloco de recurso configurado. Adicione via Admin.</p>
           </div>
           {% endfor %}
         </div>
