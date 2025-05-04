@@ -1,0 +1,43 @@
+<!-- templates/admin/login.html -->
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block content %}
+    <div id="content-main">
+        <h2>{% trans 'Login' %}</h2>
+        <form method="post" id="login-form">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_username" class="form-label">{% trans 'Usuário' %}:</label>
+                {{ form.username }}
+            </div>
+            <div class="mb-3">
+                <label for="id_password" class="form-label">{% trans 'Senha' %}:</label>
+                {{ form.password }}
+            </div>
+            {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% trans 'Por favor, corrija os erros abaixo.' %}
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <div class="submit-row">
+                <button type="submit" class="btn btn-primary">{% trans 'Entrar' %}</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block nav-global %}
+    <!-- Opcional: Deixe vazio para não exibir o menu na página de login -->
+{% endblock %}

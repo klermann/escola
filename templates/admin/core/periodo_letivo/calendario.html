@@ -1,0 +1,347 @@
+{% extends "admin/base_site.html" %}
+{% load dict_filters %}
+{% csrf_token %}
+
+{% block content %}
+<style>
+    table.calendar {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    table.calendar th, table.calendar td {
+        border: 1px solid #ddd;
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+    }
+    table.calendar th.mes {
+        background-color: #f0f0f0;
+        width: 100px;
+    }
+    table.calendar td {
+        height: 15px;
+        width: 30px;
+    }
+    table.summary {
+        width: 100%;
+        margin: 20px 0px;
+    }
+    table.summary th, table.summary td {
+        border: 1px solid #ddd;
+        padding: 4px;
+        text-align: center;
+    }
+    .legend div {
+        display: inline-block;
+        margin-right: 20px;
+        margin-bottom: 10px;
+    }
+    .legend span {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    .PL { background-color: #FF66B2; }
+    .L { background-color: rgb(148, 208, 238); }
+    .F { background-color: #FFFF66; }
+    .R { background-color: #FF6666; }
+    .AC { background-color: #CC99FF; }
+    .SA { background-color: #FF9966; }
+    .S { background-color: rgb(228, 228, 228); }
+    .D { background-color: rgb(228, 228, 228); }
+    .FE {
+        background-color: #FF3333;
+        color: white;
+        font-weight: bold;
+    }
+    .RPL { background-color: #FF99CC; }
+    .btn-action {
+        background-color: #4CAF50;
+        color: #FFFFFF;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin: 10px 5px;
+        display: inline-block;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    .btn-action:hover {
+        background-color: #45a049;
+    }
+    .btn-action.disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+    td.FE {
+        background-color: #FF0000;
+        color: white;
+        font-weight: bold;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div style="text-align: left;">
+            <button href="#" id="editar-calendario" class="btn-action">Editar Calendário</button>
+            <button href="#" id="salvar-calendario" class="btn-action disabled">Salvar Calendário</button>
+        </div>
+    </div>
+</div>
+<br/>
+
+<table class="calendar">
+    <thead>
+        <tr>
+            <th class="mes">MES/DIAS</th>
+            {% for dia in dias_cabecalho %}
+                <th>{{ dia }}</th>
+            {% endfor %}
+            <th>Dias letivos</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mes_nome, dias in calendario.items %}
+        <tr>
+            <td class="mes">{{ mes_nome }}</td>
+            {% for dia in dias %}
+                {% if dia.status == 'FE' %}
+                    <td class="FE" title="Feriado" data-mes="{{ mes_nome }}" data-dia="{{ forloop.counter }}" data-status="{{ dia.status }}">{{ dia.status }}</td>
+                {% else %}
+                    <td class="{{ dia.status }}" data-mes="{{ mes_nome }}" data-dia="{{ forloop.counter }}" data-status="{{ dia.status }}">{% if dia.status %}{{ dia.status }}{% endif %}</td>
+                {% endif %}
+            {% endfor %}
+            <td data-total-letivo="{{ dias_letivos_por_mes|get_item:mes_nome|default:'0' }}">{{ dias_letivos_por_mes|get_item:mes_nome|default:'0' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p><strong>TOTAL DAS ATIVIDADES ESCOLARES: <span id="total-dias-letivos">{{ total_dias_letivos }}</span></strong></p>
+<table class="summary">
+    <tr>
+        <th>BIMESTRES</th>
+        <th>PERÍODO LETIVO</th>
+        <th>DIAS</th>
+    </tr>
+    {% for bimestre in resumo_bimestres %}
+    <tr>
+        <td>{{ bimestre.nome }}</td>
+        <td>INÍCIO: {{ bimestre.inicio }} TÉRMINO: {{ bimestre.fim }}</td>
+        <td data-bimestre-total="{{ bimestre.dias }}">{{ bimestre.dias }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="3">Nenhum bimestre encontrado para o ano letivo {{ periodo.ano }}.</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td><strong>TOTAL GERAL</strong></td>
+        <td></td>
+        <td><strong><span id="soma-bimestre-dias">{{ soma_bimestre_dias }}</span></strong></td>
+    </tr>
+</table>
+
+<div class="legend">
+    <div><span class="PL"></span> Planejamento</div>
+    <div><span class="L"></span> Dia Letivo</div>
+    <div><span class="F"></span> Férias Docente</div>
+    <div><span class="R"></span> Recesso</div>
+    <div><span class="AC"></span> Atividades Cultural/Letivo</div>
+    <div><span class="SA"></span> Suspensão de Atividades</div>
+    <div><span class="S"></span> Sábado/Domingo</div>
+    <div><span class="FE"></span> Feriado</div>
+    <div><span class="RPL"></span> Replanejamento</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    class CalendarManager {
+        constructor() {
+            this.isEditing = false;
+            this.changes = [];
+            this.cells = document.querySelectorAll('table.calendar td:not(.mes):not(:last-child):not(.FE)');
+            this.editarBtn = document.getElementById('editar-calendario');
+            this.salvarBtn = document.getElementById('salvar-calendario');
+            this.initializeEventListeners();
+            this.updateTotals(); // Initialize totals on load
+        }
+
+        initializeEventListeners() {
+            this.editarBtn.addEventListener('click', (e) => this.toggleEditMode(e));
+            this.salvarBtn.addEventListener('click', (e) => this.saveChanges(e));
+            this.setupCellEditing();
+        }
+
+        toggleEditMode(e) {
+            e.preventDefault();
+            this.isEditing = !this.isEditing;
+            this.editarBtn.textContent = this.isEditing ? 'Cancelar Edição' : 'Editar Calendário';
+            this.salvarBtn.classList.toggle('disabled', !this.isEditing);
+            this.cells.forEach(cell => {
+                cell.style.cursor = this.isEditing ? 'pointer' : 'default';
+            });
+            if (!this.isEditing) {
+                this.changes = [];
+                this.cells.forEach(cell => {
+                    const statusAtual = cell.getAttribute('data-status') || '';
+                    cell.innerHTML = statusAtual || '';
+                });
+                this.updateTotals();
+            }
+        }
+
+        setupCellEditing() {
+            this.cells.forEach(cell => {
+                cell.addEventListener('click', () => {
+                    if (!this.isEditing || cell.querySelector('select')) return;
+
+                    const mes = cell.getAttribute('data-mes');
+                    const dia = cell.getAttribute('data-dia');
+                    const statusAtual = cell.getAttribute('data-status') || '';
+
+                    const select = document.createElement('select');
+                    const options = [
+                        { value: '', label: 'Selecione' },
+                        { value: 'PL', label: 'Planejamento' },
+                        { value: 'L', label: 'Dia Letivo' },
+                        { value: 'F', label: 'Férias Docente' },
+                        { value: 'R', label: 'Recesso' },
+                        { value: 'AC', label: 'Atividades Cultural/Letivo' },
+                        { value: 'SA', label: 'Suspensão de Atividades' },
+                        { value: 'S', label: 'Sábado/Domingo' },
+                        { value: 'D', label: 'Sábado/Domingo' },
+                        { value: 'FE', label: 'Feriado' },
+                        { value: 'RPL', label: 'Replanejamento' }
+                    ];
+
+                    options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        if (opt.value === statusAtual) option.selected = true;
+                        select.appendChild(option);
+                    });
+
+                    cell.innerHTML = '';
+                    cell.appendChild(select);
+
+                    select.addEventListener('change', () => {
+                        const novoStatus = select.value;
+                        const existingChange = this.changes.find(c => c.mes === mes && c.dia === dia);
+                        if (existingChange) existingChange.status = novoStatus;
+                        else this.changes.push({ mes, dia, status: novoStatus });
+                        cell.innerHTML = novoStatus || '';
+                        cell.setAttribute('data-status', novoStatus);
+                        cell.className = novoStatus || '';
+                        this.updateTotals();
+                    });
+
+                    select.addEventListener('blur', () => {
+                        const statusAtual = cell.getAttribute('data-status') || '';
+                        cell.innerHTML = statusAtual || '';
+                        cell.className = statusAtual || '';
+                    });
+                });
+            });
+        }
+
+        updateTotals() {
+            const diasLetivosPorMes = {};
+            const statusConsideradosLetivos = ['L']; // APENAS 'L' é considerado
+
+            document.querySelectorAll('table.calendar tbody tr').forEach(row => {
+                const mesCell = row.querySelector('td.mes');
+                const mes = mesCell.textContent;
+                const letivoCells = row.querySelectorAll('td:not(.mes):not(:last-child):not(.FE)');
+
+                diasLetivosPorMes[mes] = Array.from(letivoCells).filter(cell =>
+                    cell.getAttribute('data-status') === 'L' // Filtro estrito
+                ).length;
+
+                row.querySelector('td:last-child').textContent = diasLetivosPorMes[mes];
+            });
+
+            const totalDiasLetivos = Object.values(diasLetivosPorMes).reduce((a, b) => a + b, 0);
+            document.getElementById('total-dias-letivos').textContent = totalDiasLetivos;
+
+            // Atualiza totais dos bimestres (se necessário)
+            let somaBimestreDias = 0;
+            document.querySelectorAll('table.summary tbody tr:not(:last-child)').forEach(row => {
+                const dias = parseInt(row.querySelector('td[data-bimestre-total]').getAttribute('data-bimestre-total')) || 0;
+                somaBimestreDias += dias;
+            });
+            document.getElementById('soma-bimestre-dias').textContent = somaBimestreDias;
+        }
+
+        saveChanges(e) {
+            e.preventDefault();
+            if (!this.isEditing || this.changes.length === 0) {
+                alert('Nenhuma alteração para salvar.');
+                return;
+            }
+
+            fetch('/calendario/atualizar/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                body: JSON.stringify({ changes: this.changes })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Atualiza totais com os dados do servidor
+                    if (data.dias_letivos_por_mes && data.total_dias_letivos) {
+                        this.updateDisplayedTotals(data.dias_letivos_por_mes, data.total_dias_letivos);
+                    }
+                    alert('Calendário salvo com sucesso!');
+                    window.location.reload(); // Recarrega a página para sincronização completa
+                } else {
+                    alert('Erro ao salvar o calendário: ' + (data.error || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao salvar o calendário: ' + error.message);
+            });
+        }
+
+        // Novo método para atualizar exibição com dados do servidor
+        updateDisplayedTotals(diasPorMes, total) {
+            // Atualiza totais por mês
+            const rows = document.querySelectorAll('table.calendar tbody tr');
+            rows.forEach(row => {
+                const mesCell = row.querySelector('td.mes');
+                if (mesCell) {
+                    const mes = mesCell.textContent.trim();
+                    if (diasPorMes[mes] !== undefined) {
+                        row.querySelector('td:last-child').textContent = diasPorMes[mes];
+                    }
+                }
+            });
+
+            // Atualiza total geral
+            document.getElementById('total-dias-letivos').textContent = total;
+        }
+
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    }
+
+    new CalendarManager();
+});
+</script>
+
+{% endblock %}

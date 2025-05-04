@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Sistema Escolar{% endblock %}</title>
+</head>
+<body>
+    <div>
+        {% if user.is_authenticated %}
+            <p>Olá, {{ user.nome }}! (<a href="{% url 'logout' %}">Sair</a>)</p>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a> | 
+            <a href="{% url 'registrar' %}">Registrar</a>
+        {% endif %}
+    </div>
+    {% block content %}{% endblock %}
+</body>
+</html>

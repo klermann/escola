@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h1>Adicionar Aluno - {{ turma.nome }}</h1>
+        
+        <div class="turma-info">
+            <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+            <p><strong>Série:</strong> {{ turma.nome }}</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <label for="ra">RA/Número de Matrícula (14 dígitos):</label>
+                <input type="text" id="ra" name="ra" required maxlength="14" placeholder="0000110487524X">
+            </div>
+            
+            <div class="submit-row">
+                <button type="submit" class="button">Inserir Aluno</button>
+                <a href="{% url 'admin:manage_alunos' turma.id %}" class="button">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .turma-info {
+        margin-bottom: 20px;
+    }
+    
+    .form-row {
+        margin: 15px 0;
+    }
+    
+    .form-row label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-row input {
+        padding: 8px;
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .submit-row {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}

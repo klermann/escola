@@ -1,0 +1,30 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Título da Página{% endblock %}
+{% block description %}Descrição da página para SEO{% endblock %}
+
+{% block content %}
+<!-- Conteúdo específico da página aqui -->
+<div class="section">
+  <div class="container">
+    <h1>Meu Conteúdo</h1>
+    <p>Conteúdo específico desta página.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<!-- CSS adicional específico desta página -->
+<style>
+  .minha-classe { color: red; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- JavaScript adicional específico desta página -->
+<script>
+  $(document).ready(function() {
+    console.log('Página carregada');
+  });
+</script>
+{% endblock %}

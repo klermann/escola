@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <div class="module">
+    <form id="bimestre_form" method="post" action="">
+      {% csrf_token %}
+      
+      <div class="actions">
+        <label>Ação: </label>
+        <select name="action" style="width: 200px;">
+          <option value="">--------</option>
+          <option value="delete_selected">Remover selecionados</option>
+        </select>
+        <input type="submit" value="GO" style="margin-left: 10px;" />
+        <span style="margin-left: 10px;">0 de {{ bimestres_count }} selecionados</span>
+        <div style="margin-top: 10px; position: relative; right: 0; text-align: right;">
+          <a href="{% url 'admin:core_bimestre_add' %}" class="button" style="padding: 5px 10px; text-decoration: none;">
+            Adicionar bimestre +
+          </a>
+        </div>
+      </div>
+
+      <table class="bimestre-table" style="width: 100%; margin-top: 10px;">
+        <tbody>
+          {% if bimestres_by_year %}
+            {% for year, data in bimestres_by_year.items %}
+              <tr>
+                <td colspan="2" style="background-color: #f0f0f0; font-weight: bold; padding: 12px;">
+                  Ano: {{ year }} - Total de dias letivos: {{ data.total_dias_letivos }}
+                </td>
+              </tr>
+              {% for bimestre in data.bimestres %}
+                <tr>
+                  <td style="width: 20px; text-align: center;">
+                    <input type="checkbox" name="_selected_action" value="{{ bimestre.id }}" />
+                  </td>
+                  <td>
+                    <a href="{% url 'admin:core_bimestre_change' bimestre.id %}">
+                      {{ bimestre.nome }} - {{ bimestre.dias_letivo }} dias
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="2" style="padding: 20px; text-align: center;">
+                Nenhum bimestre cadastrado.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "admin/change_list.html" %}
+{% load admin_list %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        <!-- Mantém a barra de ações -->
+        {% if cl.formset or action_form %}
+            <div class="module">
+                <form action="" method="post" id="changelist-form">
+                    {% csrf_token %}
+                    {% if cl.formset %}
+                        {{ cl.formset.management_form }}
+                    {% endif %}
+                    {% if action_form %}
+                        <div class="actions">
+                            {{ action_form }}
+                            <button type="submit" class="button" title="Executar a ação selecionada" name="index" value="0">Executar</button>
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Adiciona o calendário -->
+        <div id="calendar"></div>
+
+        <!-- Modal para o formulário -->
+        <div id="evento-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Adicionar Evento</h3>
+                <form id="evento-form" method="post" action="{% url 'admin:core_eventocalendario_add' %}">
+                    {% csrf_token %}
+                    <div class="field">
+                        <label for="nome">Nome:</label><br>
+                        <input type="text" id="nome" name="nome" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="periodo">Período Letivo:</label><br>
+                        <select id="periodo" name="periodo" required>
+                            <option value="">Selecione um período</option>
+                            {% for periodo in periodo_queryset %}
+                                <option value="{{ periodo.id }}">{{ periodo.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="tipo">Tipo:</label><br>
+                        <select id="tipo" name="tipo" required>
+                            <option value="FERIADO">Feriado</option>
+                            <option value="AULA">Aula</option>
+                            <option value="OUTRO">Outro</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="data_inicio">Data Início:</label><br>
+                        <div class="date-wrapper">
+                            <input type="date" id="data_inicio" name="data_inicio" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="data_fim">Data Fim:</label><br>
+                        <div class="date-wrapper">
+                            <input type="date" id="data_fim" name="data_fim">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="dia_todo">Dia Todo:</label>
+                        <input type="checkbox" id="dia_todo" name="dia_todo">
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="button save-btn">Salvar</button>
+                        <button type="button" class="button cancel-btn" onclick="closeModal()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para erros -->
+        <div id="error-modal" class="modal" style="display: none;">
+            <div class="modal-content error-content">
+                <p id="error-message"></p>
+                <button class="button ok-btn" onclick="closeErrorModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Inicializando FullCalendar para EventoCalendario...");
+
+            // Função para calcular a data da Páscoa (algoritmo de Meeus/Jones/Butcher)
+            function getEasterDate(year) {
+                const a = year % 19;
+                const b = Math.floor(year / 100);
+                const c = year % 100;
+                const d = Math.floor(b / 4);
+                const e = b % 4;
+                const f = Math.floor((b + 8) / 25);
+                const g = Math.floor((b - f + 1) / 3);
+                const h = (19 * a + b - d - g + 15) % 30;
+                const i = Math.floor(c / 4);
+                const k = c % 4;
+                const l = (32 + 2 * e + 2 * i - h - k) % 7;
+                const m = Math.floor((a + 11 * h + 22 * l) / 451);
+                const month = Math.floor((h + l - 7 * m + 114) / 31);
+                const day = ((h + l - 7 * m + 114) % 31) + 1;
+                return new Date(year, month - 1, day);
+            }
+
+            // Função para formatar data como YYYY-MM-DD
+            function formatDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Função para verificar se uma data é restrita (final de semana ou feriado)
+            function isRestrictedDate(date, feriados) {
+                const adjustedDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                const isFinalDeSemana = adjustedDate.getDay() === 0 || adjustedDate.getDay() === 6;
+                const dateStr = formatDate(adjustedDate);
+                const isFeriado = feriados.includes(dateStr);
+                return { isFinalDeSemana, isFeriado, isRestricted: isFinalDeSemana || isFeriado };
+            }
+
+            // Gerar lista de feriados de 2025 a 2031
+            const feriados = [];
+            for (let year = 2025; year <= 2031; year++) {
+                // Feriados fixos
+                feriados.push(
+                    `${year}-01-01`, // Ano Novo
+                    `${year}-04-21`, // Tiradentes
+                    `${year}-05-01`, // Dia do Trabalho
+                    `${year}-09-07`, // Independência do Brasil
+                    `${year}-10-12`, // Nossa Senhora Aparecida
+                    `${year}-11-02`, // Finados
+                    `${year}-11-15`, // Proclamação da República
+                    `${year}-12-25`  // Natal
+                );
+
+                // Feriados móveis
+                const easterDate = getEasterDate(year);
+                const carnivalMonday = new Date(easterDate);
+                carnivalMonday.setDate(easterDate.getDate() - 48); // 48 dias antes da Páscoa
+                const carnivalTuesday = new Date(easterDate);
+                carnivalTuesday.setDate(easterDate.getDate() - 47); // 47 dias antes da Páscoa
+                const goodFriday = new Date(easterDate);
+                goodFriday.setDate(easterDate.getDate() - 2); // 2 dias antes da Páscoa
+                const corpusChristi = new Date(easterDate);
+                corpusChristi.setDate(easterDate.getDate() + 60); // 60 dias após a Páscoa
+
+                feriados.push(
+                    formatDate(carnivalMonday), // Carnaval (segunda)
+                    formatDate(carnivalTuesday), // Carnaval (terça)
+                    formatDate(goodFriday), // Sexta-feira Santa
+                    formatDate(easterDate), // Páscoa
+                    formatDate(corpusChristi) // Corpus Christi
+                );
+
+                // Dia da Consciência Negra (feriado em algumas regiões)
+                feriados.push(`${year}-11-20`);
+            }
+
+            // Log para depuração: listar feriados de abril de 2025
+            console.log("Feriados de abril de 2025:", feriados.filter(date => date.startsWith('2025-04')));
+
+            var calendarEl = document.getElementById('calendar');
+            if (!calendarEl) {
+                console.error("Elemento #calendar não encontrado!");
+                return;
+            }
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    fetch('{% url "admin:core_eventocalendario_changelist" %}', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        var events = data.map(evento => ({
+                            id: 'evento-' + evento.id,
+                            title: evento.nome,
+                            start: evento.data_inicio,
+                            end: evento.data_fim,
+                            backgroundColor: evento.tipo === 'FERIADO' ? 'red' : evento.tipo === 'AULA' ? 'green' : 'gray',
+                            borderColor: evento.tipo === 'FERIADO' ? 'red' : evento.tipo === 'AULA' ? 'green' : 'gray'
+                        }));
+                        successCallback(events);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar eventos:', error);
+                        failureCallback(error);
+                    });
+                },
+                eventClick: function(info) {
+                    console.log("Evento clicado:", info.event.id);
+                    var eventId = info.event.id.replace('evento-', '');
+                    window.location.href = '{% url "admin:core_eventocalendario_change" 0 %}'.replace('0', eventId);
+                },
+                dateClick: function(info) {
+                    console.log("Data clicada:", info.dateStr);
+
+                    // Criar a data ajustada para o fuso horário local
+                    const dataClicada = new Date(info.dateStr + 'T00:00:00');
+                    const { isFinalDeSemana, isFeriado, isRestricted } = isRestrictedDate(dataClicada, feriados);
+
+                    console.log(`Data: ${info.dateStr}, Dia da semana: ${dataClicada.getDay()}, É final de semana: ${isFinalDeSemana}, É feriado: ${isFeriado}`);
+
+                    // Bloquear cliques em feriados e finais de semana
+                    if (isRestricted) {
+                        showErrorModal('Não é possível adicionar eventos em feriados ou finais de semana.');
+                        return;
+                    }
+
+                    // Prosseguir com a lógica original
+                    openModal(info.dateStr);
+                },
+                dayCellClassNames: function(info) {
+                    const { isRestricted } = isRestrictedDate(info.date, feriados);
+                    return isRestricted ? ['restricted-day'] : [];
+                }
+            });
+            calendar.render();
+            console.log("Calendário renderizado para EventoCalendario.");
+
+            // Abrir modal ao clicar no botão "Add Evento de Calendário"
+            document.querySelector('.add-related-object a').addEventListener('click', function(e) {
+                e.preventDefault();
+                openModal();
+            });
+
+            // Manipular o envio do formulário com AJAX
+            var form = document.getElementById('evento-form');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                var formData = new FormData(form);
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        calendar.refetchEvents();
+                        closeModal();
+                    } else {
+                        // Extrair erros do JSON e exibir no modal
+                        var errors = JSON.parse(data.error);
+                        var errorMessage = Object.values(errors).map(field => field[0].message).join('\n');
+                        showErrorModal(errorMessage || 'Erro ao salvar o evento.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    showErrorModal('Erro ao salvar o evento.');
+                });
+            });
+        });
+
+        document.getElementById('evento-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        function openModal(dateStr = null) {
+            var modal = document.getElementById('evento-modal');
+            var dataInicio = document.getElementById('data_inicio');
+            var dataFim = document.getElementById('data_fim');
+            var form = document.getElementById('evento-form');
+
+            form.reset();
+            if (dateStr) {
+                dataInicio.value = dateStr;
+                dataFim.value = dateStr;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('evento-modal').style.display = 'none';
+        }
+
+        function showErrorModal(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').style.display = 'block';
+        }
+
+        function closeErrorModal() {
+            document.getElementById('error-modal').style.display = 'none';
+        }
+    </script>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .modal-overlay {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        .modal-content h3 {
+            margin-top: 0;
+        }
+        .modal-content .field {
+            margin-bottom: 15px;
+        }
+        .modal-content label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .modal-content .date-wrapper {
+            position: relative;
+        }
+        .modal-content .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .modal-content .button {
+            padding: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .save-btn {
+            background-color: #0056b3;
+            color: white;
+        }
+        .save-btn:hover {
+            background-color: #003d82;
+        }
+        .cancel-btn {
+            background-color: #ccc;
+            color: black;
+        }
+        .cancel-btn:hover {
+            background-color: #b3b3b3;
+        }
+        .error-content {
+            background: #333;
+            color: white;
+            width: 300px;
+            text-align: center;
+        }
+        .error-content p {
+            margin: 0 0 20px 0;
+            white-space: pre-line;
+        }
+        .ok-btn {
+            background-color: #00b7eb;
+            color: white;
+        }
+        .ok-btn:hover {
+            background-color: #009bcd;
+        }
+        .restricted-day {
+            background-color: rgb(218, 218, 218) !important;
+            cursor: not-allowed;
+        }
+        .restricted-day .fc-daygrid-day-number {
+            color: #666;
+        }
+    </style>
+{% endblock %}

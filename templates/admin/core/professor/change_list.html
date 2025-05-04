@@ -1,0 +1,231 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Container principal */
+    .professores-container {
+        padding: 20px 0;
+        width: 100%;
+    }
+    
+    /* Header com botão de adicionar */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .add-professor-btn {
+        background-color: #447e9b;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: none;
+        font-weight: 400;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .add-professor-btn:hover {
+        background-color: #447e9b;
+        color: white;
+    }
+    
+    .add-professor-btn:before {
+        content: "+";
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+    
+    /* Grid de cards */
+    .professor-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+    
+    /* Card individual */
+    .professor-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .professor-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        border-color: #79aec8;
+    }
+    
+    /* Cabeçalho do card */
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        background: #f9f9f9;
+    }
+    
+    .card-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    /* Conteúdo do card */
+    .card-body {
+        padding: 20px;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .card-body h3 {
+        margin: 0 0 10px 0;
+        color: #447e9b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    /* Botões de ação */
+    .edit-delete-container {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .edit-btn, .delete-btn {
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background-color: transparent;
+        transition: background-color 0.2s, border-color 0.2s;
+        cursor: pointer;
+    }
+
+    .edit-btn:hover, .delete-btn:hover {
+        background-color: #e0e0e0;
+        border-color: #999;
+    }
+
+    .action-icon {
+        width: 12px;
+        height: 12px;
+        filter: none;
+    }
+
+    .edit-btn .action-icon {
+        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%);
+    }
+
+    .delete-btn .action-icon {
+        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%);
+    }
+    
+    /* Mensagem quando vazio */
+    .empty-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px dashed #ddd;
+    }
+
+    /* Nome do professor como link */
+    .professor-link {
+        color: #447e9b;
+        text-decoration: none;
+        transition: color 0.2s ease-in-out;
+    }
+    .professor-link:hover {
+        color: #79aec8;
+    }
+
+    /* Responsividade */
+    @media (max-width: 1024px) {
+        .professor-cards {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .professor-cards {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .professor-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="page-header">
+        <p><strong>{{ cl.result_count }} Professor{{ cl.result_count|pluralize:"es" }}</strong></p>
+        <button style="float: right;" class="add-professor-btn" onclick="window.location.href='{% url 'admin:core_professor_add' %}'">
+            Adicionar Professor
+        </button>
+    </div>
+    <div class="module" id="changelist">
+        <div class="professores-container">
+            {% if cl.result_list %}
+                <div class="professor-cards">
+                    {% for obj in cl.result_list %}
+                    <div class="professor-card">
+                        <div class="card-header">
+                            <div class="card-actions">
+                                <div class="edit-delete-container">
+                                    <button class="edit-btn" title="Editar" onclick="window.location.href='{% url 'admin:core_professor_change' obj.pk %}'">
+                                        <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar" class="action-icon">
+                                    </button>
+                                    <button class="delete-btn" title="Excluir" onclick="if(confirm('Tem certeza que deseja excluir {{ obj.nome }}?')) window.location.href='{% url 'admin:core_professor_delete' obj.pk %}'">
+                                        <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir" class="action-icon">
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h3><a href="{% url 'admin:core_professor_change' obj.pk %}" class="professor-link">{{ obj.nome }}</a></h3>
+                            <p><strong>CPF:</strong> {{ obj.cpf }}</p>
+                            <p><strong>Disciplinas:</strong> {% if obj.disciplinas.all %}{{ obj.disciplinas.all|join:", " }}{% else %}Nenhuma{% endif %}</p>
+                            <p><strong>Turmas:</strong> {% if obj.turmas.all %}{{ obj.turmas.all|join:", " }}{% else %}Nenhuma{% endif %}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-message">
+                    Nenhum professor encontrado.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

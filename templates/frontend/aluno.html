@@ -1,0 +1,516 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <!-- Basic Page Needs -->
+  <meta charset="utf-8">
+  <title>{% block title %}Educenter - Template HTML de Educação{% endblock %}</title>
+
+  <!-- Mobile Specific Metas -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="Template HTML5 de Educação">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="author" content="Themefisher">
+  <meta name="generator" content="Themefisher Educenter HTML Template v1.0">
+  
+  <!-- Theme Meta -->
+  <meta name="theme-name" content="educenter" />
+
+  <!-- ** Plugins Needed for the Project ** -->
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{% static 'plugins/bootstrap/bootstrap.min.css' %}">
+  <!-- Slick Slider -->
+  <link rel="stylesheet" href="{% static 'plugins/slick/slick.css' %}">
+  <!-- Themefy-Icon -->
+  <link rel="stylesheet" href="{% static 'plugins/themify-icons/themify-icons.css' %}">
+  <!-- Animation CSS -->
+  <link rel="stylesheet" href="{% static 'plugins/animate/animate.css' %}">
+  <!-- AOS -->
+  <link rel="stylesheet" href="{% static 'plugins/aos/aos.css' %}">
+  <!-- Venobox Popup -->
+  <link rel="stylesheet" href="{% static 'plugins/venobox/venobox.css' %}">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  <!-- Favicon -->
+  <!-- Expected location: escola/static/images/favicon.png -->
+  <link rel="shortcut icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+</head>
+
+<body>
+  <!-- Preloader Start -->
+  <div class="preloader">
+    <!-- Expected location: escola/static/images/preloader.gif -->
+    <img src="{% static 'images/preloader.gif' %}" alt="pré-carregador">
+  </div>
+  <!-- Preloader End -->
+<!-- header -->
+<header class="fixed-top header">
+  <!-- top header -->
+  <div class="top-header py-2 bg-white">
+    <div class="container">
+      <div class="row no-gutters">
+        <div class="col-lg-4 text-center text-lg-left">
+          <a class="text-color mr-3" href="tel:+443003030266"><strong>CALL</strong> +44 300 303 0266</a>
+          <ul class="list-inline d-inline">
+            <li class="list-inline-item mx-0"><a class="d-inline-block p-2 text-color" href="https://facebook.com/themefisher/"><i class="ti-facebook"></i></a></li>
+            <li class="list-inline-item mx-0"><a class="d-inline-block p-2 text-color" href="https://twitter.com/themefisher"><i class="ti-twitter-alt"></i></a></li>
+            <li class="list-inline-item mx-0"><a class="d-inline-block p-2 text-color" href="https://github.com/themefisher"><i class="ti-github"></i></a></li>
+            <li class="list-inline-item mx-0"><a class="d-inline-block p-2 text-color" href="https://instagram.com/themefisher/"><i class="ti-instagram"></i></a></li>
+          </ul>
+        </div>
+        <div class="col-lg-8 text-center text-lg-right">
+          <ul class="list-inline">
+            <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="notice.html">notice</a></li>
+            <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="research.html">research</a></li>
+            <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="scholarship.html">SCHOLARSHIP</a></li>
+            <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#loginModal" data-toggle="modal" data-target="#loginModal">login</a></li>
+            <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#signupModal" data-toggle="modal" data-target="#signupModal">register</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- navbar -->
+  <div class="navigation w-100">
+    <div class="container">
+      <nav class="navbar navbar-expand-lg navbar-dark p-0">
+        <a class="navbar-brand" href="index.html">
+          <img src="{% static 'images/logo.png' %}" alt="logo">
+        </a>
+        <button class="navbar-toggler rounded-0" type="button" data-toggle="collapse" data-target="#navigation"
+          aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navigation">
+          <ul class="navbar-nav ml-auto text-center">
+            <li class="nav-item @@index">
+              <a class="nav-link" href="/">Home</a>
+            </li>
+            <li class="nav-item @@about">
+              <a class="nav-link" href="about.html">About</a>
+            </li>
+            <li class="nav-item active">
+              <a class="nav-link" href="courses.html">COURSES</a>
+            </li>
+            <li class="nav-item @@events">
+              <a class="nav-link" href="events.html">EVENTS</a>
+            </li>
+            <li class="nav-item @@blog">
+              <a class="nav-link" href="blog.html">BLOG</a>
+            </li>
+            <li class="nav-item dropdown view">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Pages
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="teacher.html">Teacher</a></li>
+                <li><a class="dropdown-item" href="teacher-single.html">Teacher Single</a></li>
+                <li><a class="dropdown-item" href="notice.html">Notice</a></li>
+                <li><a class="dropdown-item" href="notice-single.html">Notice Details</a></li>
+                <li><a class="dropdown-item" href="research.html">Research</a></li>
+                <li><a class="dropdown-item" href="scholarship.html">Scholarship</a></li>
+                <li><a class="dropdown-item" href="course-single.html">Course Details</a></li>
+                <li><a class="dropdown-item" href="event-single.html">Event Details</a></li>
+                <li><a class="dropdown-item" href="blog-single.html">Blog Details</a></li>
+                
+                <li class="dropdown-item dropdown dropleft">
+                  <a class="dropdown-toggle" href="#" id="navbarDropdownSubmenu" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Sub Menu
+                  </a>
+                  <ul class="dropdown-menu dropdown-submenu" aria-labelledby="navbarDropdownSubmenu">
+                    <li><a class="dropdown-item" href="#!">Sub Menu 01</a></li>
+                    <li><a class="dropdown-item" href="#!">Sub Menu 02</a></li>
+                    <li><a class="dropdown-item" href="#!">Sub Menu 03</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item @@contact">
+              <a class="nav-link" href="contact.html">CONTACT</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+<!-- /header -->
+<!-- Modal -->
+<div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content rounded-0 border-0 p-4">
+            <div class="modal-header border-0">
+                <h3>Register</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="login">
+                    <form action="#" class="row">
+                        <div class="col-12">
+                            <input type="text" class="form-control mb-3" id="signupPhone" name="signupPhone" placeholder="Phone">
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control mb-3" id="signupName" name="signupName" placeholder="Name">
+                        </div>
+                        <div class="col-12">
+                            <input type="email" class="form-control mb-3" id="signupEmail" name="signupEmail" placeholder="Email">
+                        </div>
+                        <div class="col-12">
+                            <input type="password" class="form-control mb-3" id="signupPassword" name="signupPassword" placeholder="Password">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">SIGN UP</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content rounded-0 border-0 p-4">
+            <div class="modal-header border-0">
+                <h3>Login</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="#" class="row">
+                    <div class="col-12">
+                        <input type="text" class="form-control mb-3" id="loginPhone" name="loginPhone" placeholder="Phone">
+                    </div>
+                    <div class="col-12">
+                        <input type="text" class="form-control mb-3" id="loginName" name="loginName" placeholder="Name">
+                    </div>
+                    <div class="col-12">
+                        <input type="password" class="form-control mb-3" id="loginPassword" name="loginPassword" placeholder="Password">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">LOGIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- page title -->
+<section class="page-title-section overlay" data-background="images/backgrounds/page-title.jpg">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8">
+        <ul class="list-inline custom-breadcrumb mb-2">
+          <li class="list-inline-item"><a class="h2 text-primary font-secondary" href="index.html">Home</a></li>
+          <li class="list-inline-item text-white h3 font-secondary nasted">Aluno</li>
+        </ul>
+        <p class="text-lighten mb-0">Our courses offer a good compromise between the continuous assessment favoured by some universities and the emphasis placed on final exams by others.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /page title -->
+
+<!-- courses -->
+<section class="section-sm">
+  <div class="container">
+    <!-- course list -->
+      <div class="row ">
+        <div class="col-12">
+          <h2 class="section-title">Consulta de Boletim Escolar</h2>
+        </div>
+      </div>
+        <!-- course item -->
+        {% block content %}
+        <div class="container mt-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0"><i class="fas fa-graduation-cap me-2"></i>Consulta de Boletim Escolar</h1>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" class="mb-4" id="boletimForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="ra_aluno" class="form-label"><strong>Digite o RA do aluno:</strong></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="ra_aluno" 
+                                       name="ra_aluno" 
+                                       required
+                                       placeholder="0000XXXXXXXXX" 
+                                       pattern="^0000\d{9}[0-9X]$"
+                                       title="Formato: 0000 + 9 dígitos + 1 dígito/X">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="pesquisarBtn">
+                            <i class="fas fa-search me-2"></i>PESQUISAR
+                        </button>
+                    </form>
+        
+                    <div id="boletimResult">
+                        {% if boletim  %}
+                        <div class="table-responsive mt-4">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <div>
+                                  <h2 class="h5 mb-1"><i class="fas fa-user-graduate me-2"></i>{{ boletim.aluno.nome|upper }}</h2>
+                                  <h3 class="h6 text-muted"><i class="fas fa-users me-2"></i>Turma: {{ boletim.turma }}</h3>
+                              </div>
+                              <span class="badge bg-secondary">{{ boletim.ano_letivo|default:"2024" }}</span>
+                          </div>
+                          
+                          <table class="table table-bordered table-hover">
+                              <thead class="table-dark">
+                                  <tr>
+                                      <th rowspan="2" class="align-middle">Disciplina</th>
+                                      <th colspan="3" class="text-center">1º Bimestre</th>
+                                      <th colspan="3" class="text-center">2º Bimestre</th>
+                                      <th colspan="3" class="text-center">3º Bimestre</th>
+                                      <th colspan="3" class="text-center">4º Bimestre</th>
+                                  </tr>
+                                  <tr class="table-secondary">
+                                      <th class="text-center">Nota</th>
+                                      <th class="text-center">Faltas</th>
+                                      <th class="text-center">Situação</th>
+                                      <th class="text-center">Nota</th>
+                                      <th class="text-center">Faltas</th>
+                                      <th class="text-center">Situação</th>
+                                      <th class="text-center">Nota</th>
+                                      <th class="text-center">Faltas</th>
+                                      <th class="text-center">Situação</th>
+                                      <th class="text-center">Nota</th>
+                                      <th class="text-center">Faltas</th>
+                                      <th class="text-center">Situação</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  {% for disciplina_nome, disciplina_data in boletim.disciplinas.items %}
+                                  <tr>
+                                      <td class="fw-semibold">{{ disciplina_nome }}</td>
+                                      {% for bimestre in disciplina_data.bimestres %}
+                                          <td class="{% if bimestre.nota %}fw-bold{% endif %}">
+                                              {{ bimestre.nota|default_if_none:"" }}
+                                          </td>
+                                          <td class="{% if bimestre.faltas %}text-warning{% endif %}">
+                                              {{ bimestre.faltas|default_if_none:"" }}
+                                          </td>
+                                          <td class="{% if bimestre.mireq == 'Aprovado' %}text-success{% elif bimestre.mireq == 'Reprovado' %}text-danger{% endif %}">
+                                              {{ bimestre.mireq|default_if_none:"" }}
+                                          </td>
+                                      {% endfor %}
+                                  </tr>
+                                  {% endfor %}
+                              </tbody>
+                          </table>
+                          
+                          <div class="mt-4 pt-3 border-top">
+                              <div class="d-flex justify-content-between align-items-center">
+                                  <div class="text-muted small">
+                                      <strong class="d-block mb-1">Legenda:</strong>
+                                      <span class="me-3"><i class="fas fa-font me-1"></i> Notas</span>
+                                      <span class="me-3"><i class="fas fa-user-slash me-1 text-warning"></i> Faltas</span>
+                                      <span class="me-3"><i class="fas fa-check-circle me-1 text-success"></i> Aprovado</span>
+                                      <span><i class="fas fa-times-circle me-1 text-danger"></i> Reprovado</span>
+                                  </div>
+                                  <a href="{% url 'consulta_boletim' %}" class="btn btn-outline-secondary">
+                                      <i class="fas fa-sync-alt me-2"></i>NOVA PESQUISA
+                                  </a>
+                              </div>
+                          </div>
+                      </div>
+                      {% endif %}
+                  </div>
+              </div>
+          </div>
+          {% endblock %}
+          </div>
+      <!-- /course list -->
+    <!-- course list -->
+<div class="row justify-content-center">
+  <!-- course item -->
+  
+</div>
+<!-- /course list -->
+  </div>
+</section>
+<!-- /courses -->
+
+<!-- footer -->
+<footer>
+  <!-- newsletter -->
+  <div class="newsletter">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-9 ml-auto bg-primary py-5 newsletter-block">
+          <h3 class="text-white">Subscribe Now</h3>
+          <form action="#">
+            <div class="input-wrapper">
+              <input type="email" class="form-control border-0" id="newsletter" name="newsletter" placeholder="Enter Your Email...">
+              <button type="submit" value="send" class="btn btn-primary">Join</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- footer content -->
+  <div class="footer bg-footer section border-bottom">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-4 col-sm-8 mb-5 mb-lg-0">
+          <!-- logo -->
+          <a class="logo-footer" href="index.html"><img class="img-fluid mb-4" src="images/logo.png" alt="logo"></a>
+          <ul class="list-unstyled">
+            <li class="mb-2">23621 15 Mile Rd #C104, Clinton MI, 48035, New York, USA</li>
+            <li class="mb-2">+1 (2) 345 6789</li>
+            <li class="mb-2">+1 (2) 345 6789</li>
+            <li class="mb-2">contact@yourdomain.com</li>
+          </ul>
+        </div>
+        <!-- company -->
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-5 mb-md-0">
+          <h4 class="text-white mb-5">COMPANY</h4>
+          <ul class="list-unstyled">
+            <li class="mb-3"><a class="text-color" href="about.html">About Us</a></li>
+            <li class="mb-3"><a class="text-color" href="teacher.html">Our Teacher</a></li>
+            <li class="mb-3"><a class="text-color" href="contact.html">Contact</a></li>
+            <li class="mb-3"><a class="text-color" href="blog.html">Blog</a></li>
+          </ul>
+        </div>
+        <!-- links -->
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-5 mb-md-0">
+          <h4 class="text-white mb-5">LINKS</h4>
+          <ul class="list-unstyled">
+            <li class="mb-3"><a class="text-color" href="courses.html">Courses</a></li>
+            <li class="mb-3"><a class="text-color" href="events.html">Events</a></li>
+            <li class="mb-3"><a class="text-color" href="notice.html">Notice</a></li>
+            <li class="mb-3"><a class="text-color" href="scholarship.html">Scholarship</a></li>
+          </ul>
+        </div>
+        <!-- support -->
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-5 mb-md-0">
+          <h4 class="text-white mb-5">SUPPORT</h4>
+          <ul class="list-unstyled">
+            <li class="mb-3"><a class="text-color" href="https://themefisher.com/blog">Forums</a></li>
+            <li class="mb-3"><a class="text-color" href="https://docs.themefisher.com/">Documentation</a></li>
+            <li class="mb-3"><a class="text-color" href="#!">Language</a></li>
+            <li class="mb-3"><a class="text-color" href="#!">Release Status</a></li>
+          </ul>
+        </div>
+        <!-- support -->
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-5 mb-md-0">
+          <h4 class="text-white mb-5">RECOMMEND</h4>
+          <ul class="list-unstyled">
+            <li class="mb-3"><a class="text-color" href="https://themefisher.com/">WordPress</a></li>
+            <li class="mb-3"><a class="text-color" href="https://themefisher.com/">LearnPress</a></li>
+            <li class="mb-3"><a class="text-color" href="https://themefisher.com/">WooCommerce</a></li>
+            <li class="mb-3"><a class="text-color" href="https://themefisher.com/">bbPress</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- copyright -->
+  <div class="copyright py-4 bg-footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-7 text-sm-left text-center">
+          <p class="mb-0">Copyright &copy;
+            <script>
+              var CurrentYear = new Date().getFullYear()
+              document.write(CurrentYear)
+            </script> 
+            , designed & developed by <a href="https://themefisher.com/" class="text-muted">Themefisher</a>
+          </p>
+        </div>
+        <div class="col-sm-5 text-sm-right text-center">
+          <ul class="list-inline">
+            <li class="list-inline-item"><a class="d-inline-block p-2" href="https://facebook.com/themefisher/"><i class="ti-facebook text-primary"></i></a></li>
+            <li class="list-inline-item"><a class="d-inline-block p-2" href="https://twitter.com/themefisher"><i class="ti-twitter-alt text-primary"></i></a></li>
+            <li class="list-inline-item"><a class="d-inline-block p-2" href="https://github.com/themefisher"><i class="ti-github text-primary"></i></a></li>
+            <li class="list-inline-item"><a class="d-inline-block p-2" href="https://instagram.com/themefisher/"><i class="ti-instagram text-primary"></i></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+<!-- /footer -->
+{% block extra_js %}
+<!-- jQuery -->
+<script src="{% static 'plugins/jQuery/jquery.min.js' %}"></script>
+<!-- Bootstrap JS -->
+<script src="{% static 'plugins/bootstrap/bootstrap.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    $('#pesquisarBtn').click(function(e) {
+        e.preventDefault();
+        
+        // Mostrar spinner de carregamento
+        $('#boletimResult').html('<div class="text-center my-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div></div>');
+        
+        // Validação do formulário
+        var form = $('#boletimForm')[0];
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        // Enviar via AJAX
+        $.ajax({
+            type: 'POST',
+            url: window.location.href,  // Usar a URL atual
+            data: $('#boletimForm').serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                // Extrair o conteúdo do boletimResult da resposta
+                var tempDiv = $('<div>').html(response);
+                var newContent = tempDiv.find('#boletimResult').html();
+                
+                if (newContent) {
+                    $('#boletimResult').html(newContent);
+                } else {
+                    $('#boletimResult').html('<div class="alert alert-warning">Nenhum dado encontrado para o RA informado.</div>');
+                }
+                
+                // Rolagem suave
+                $('html, body').animate({
+                    scrollTop: $('#boletimResult').offset().top - 100
+                }, 500);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                $('#boletimResult').html('<div class="alert alert-danger">Erro ao processar a solicitação. Por favor, tente novamente.</div>');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+<!-- Slick Slider -->
+<script src="{% static 'plugins/slick/slick.min.js' %}"></script>
+<!-- AOS -->
+<script src="{% static 'plugins/aos/aos.js' %}"></script>
+<!-- Venobox Popup -->
+<script src="{% static 'plugins/venobox/venobox.min.js' %}"></script>
+<!-- Filter -->
+<script src="{% static 'plugins/filterizr/jquery.filterizr.min.js' %}"></script>
+<!-- Main Script -->
+<script src="{% static 'js/script.js' %}"></script>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Container principal */
+    .avaliacoes-container {
+        padding: 20px 0;
+        width: 100%;
+    }
+    
+    /* Grid de cards */
+    .avaliacoes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+    
+    /* Card individual */
+    .avaliacao-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    
+    .avaliacao-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        border-color: #79aec8;
+    }
+    
+    /* Conteúdo do card */
+    .avaliacao-card h3 {
+        margin: 0 0 10px 0;
+        color: #447e9b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .avaliacao-card p {
+        margin: 0 0 8px 0;
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    /* Mensagem quando vazio */
+    .empty-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px dashed #ddd;
+    }
+
+    /* Responsividade */
+    @media (max-width: 1024px) {
+        .avaliacoes-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .avaliacoes-grid {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .avaliacoes-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .avaliacao-card {
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module" id="changelist">
+        <h1>Avaliações</h1>
+        <div class="avaliacoes-container">
+            <div class="avaliacoes-grid">
+                {% for turma in turmas %}
+                <a href="{% url 'admin:core_avaliacao_form' turma.id %}" class="avaliacao-card">
+                    <h3>{{ turma.nome }}</h3>
+                    <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                </a>
+                {% empty %}
+                <div class="empty-message">
+                    Nenhuma turma cadastrada.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

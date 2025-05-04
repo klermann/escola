@@ -1,0 +1,152 @@
+{% extends "admin/base.html" %}
+{% load dict_filters %}
+
+{% block content %}
+<style>
+    table.calendar {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    table.calendar th, table.calendar td {
+        border: 1px solid #ddd;
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+    }
+    table.calendar th.mes {
+        background-color: #f0f0f0;
+        width: 100px;
+    }
+    table.calendar td {
+        height: 30px;
+        width: 30px;
+    }
+    table.summary {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    table.summary th, table.summary td {
+        border: 1px solid #ddd;
+        padding: 5px;
+        text-align: center;
+    }
+    .legend div {
+        display: inline-block;
+        margin-right: 20px;
+        margin-bottom: 10px;
+    }
+    .legend span {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    .PL { background-color: #FF66B2; }
+    .L { background-color: #66CCFF; }
+    .F { background-color: #FFFF66; }
+    .R { background-color: #FF6666; }
+    .AC { background-color: #CC99FF; }
+    .SA { background-color: #FF9966; }
+    .S { background-color: #66FF99; }
+    .D { background-color: #99FF66; }
+    .FE { background-color: #FF3333; }
+    .RPL { background-color: #FF99CC; }
+    .btn-action {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin: 10px 0;
+        display: inline-block;
+    }
+    .btn-action:hover {
+        background-color: #45a049;
+    }
+</style>
+
+<h1>CALENDÁRIO ESCOLAR</h1>
+
+<a href="#" class="btn-action">Editar Calendário</a>
+
+<table class="calendar">
+    <thead>
+        <tr>
+            <th class="mes">MES/DIAS</th>
+                {% for dia in dias_cabecalho %}
+            <th>{{ dia }}</th>
+            {% endfor %}
+            <th>DIAS LETIVOS</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mes_nome, dias in calendario.items %}
+        <tr>
+            <td class="mes">{{ mes_nome }}</td>
+            {% for dia in dias %}
+                <td class="{{ dia.status }}">{{ dia.status }}</td>
+            {% empty %}
+                {% for i in "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31" %}
+                    <td></td>
+                {% endfor %}
+            {% endfor %}
+            <td>{{ dias_letivos_por_mes.mes_nome }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p><strong>TOTAL DAS ATIVIDADES ESCOLARES: {{ total_dias_letivos }}</strong></p>
+
+<table class="summary">
+    <tr>
+        <th>BIMESTRES</th>
+        <th>PERÍODO LETIVO</th>
+        <th>DIAS</th>
+    </tr>
+    <tr>
+        <td>1º BIMESTRE</td>
+        <td>INÍCIO: 05/02 TÉRMINO: 30/04</td>
+        <td>55</td>
+    </tr>
+    <tr>
+        <td>2º BIMESTRE</td>
+        <td>INÍCIO: 06/05 TÉRMINO: 05/07</td>
+        <td>45</td>
+    </tr>
+    <tr>
+        <td>3º BIMESTRE</td>
+        <td>INÍCIO: 23/07 TÉRMINO: 30/09</td>
+        <td>49</td>
+    </tr>
+    <tr>
+        <td>4º BIMESTRE</td>
+        <td>INÍCIO: 01/10 TÉRMINO: 19/12</td>
+        <td>51</td>
+    </tr>
+    <tr>
+        <td><strong>TOTAL GERAL</strong></td>
+        <td></td>
+        <td><strong>{{ total_dias_letivos }}</strong></td>
+    </tr>
+</table>
+
+<div class="legend">
+    <div><span class="PL"></span> Planejamento</div>
+    <div><span class="L"></span> Dia Letivo</div>
+    <div><span class="F"></span> Férias Docente</div>
+    <div><span class="R"></span> Recesso</div>
+    <div><span class="AC"></span> Atividades Cultural/Letivo</div>
+    <div><span class="SA"></span> Suspensão de Atividades</div>
+    <div><span class="S"></span> Sábado/Domingo</div>
+    <div><span class="D"></span> Sábado/Domingo</div>
+    <div><span class="FE"></span> Feriado</div>
+    <div><span class="RPL"></span> Replanejamento</div>
+</div>
+
+<a href="#" class="btn-action">Salvar Calendário</a>
+
+{% endblock %}

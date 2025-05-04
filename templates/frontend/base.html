@@ -1,0 +1,222 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <!-- Meta Tags Básicas -->
+  <meta charset="utf-8">
+  <title>{% block title %}Educenter - Template HTML de Educação{% endblock %}</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="{% block description %}Template HTML5 de Educação{% endblock %}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="author" content="Themefisher">
+  <meta name="generator" content="Themefisher Educenter HTML Template v1.0">
+  <meta name="theme-name" content="educenter" />
+
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+
+  <!-- CSS Plugins -->
+  <link rel="stylesheet" href="{% static 'plugins/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/slick/slick.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/themify-icons/themify-icons.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/animate/animate.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/aos/aos.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/venobox/venobox.css' %}">
+
+  <!-- CSS Principal -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  <!-- Bloco para CSS adicional específico da página -->
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  <!-- Preloader -->
+  <div class="preloader">
+    <img src="{% static 'images/preloader.gif' %}" alt="pré-carregador">
+  </div>
+
+  <!-- Header -->
+  <header class="fixed-top header">
+    <!-- Top Header -->
+    <div class="top-header py-2 bg-white">
+      <div class="container">
+        <div class="row no-gutters">
+          <div class="col-lg-12 text-center text-lg-right">
+            <ul class="list-inline">
+              <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#loginModal" data-toggle="modal" data-target="#loginModal">ENTRAR</a></li>
+              <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#signupModal" data-toggle="modal" data-target="#signupModal">CADASTRAR</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navbar -->
+    <div class="navigation w-100">
+      <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark p-0">
+          <a class="navbar-brand" href="{% url 'index' %}">
+            <img height="100" src="{% static 'images/logo-escola.png' %}" alt="logo">
+          </a>
+          <button class="navbar-toggler rounded-0" type="button" data-toggle="collapse" data-target="#navigation"
+            aria-controls="navigation" aria-expanded="false" aria-label="Alternar navegação">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navigation">
+            <ul class="navbar-nav ml-auto text-center">
+              <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <a class="nav-link" href="{% url 'index' %}">Início</a>
+              </li>
+              <li class="nav-item {% if 'aluno' in request.path %}active{% endif %}">
+                <a class="nav-link" href="{% url 'aluno' %}">Aluno</a>
+              </li>
+              <li class="nav-item {% if 'about' in request.path %}active{% endif %}">
+                <a class="nav-link" href="{% url 'about' %}">Sobre</a>
+              </li>
+              <!-- Link para o Admin -->
+              {% if user.is_authenticated and user.is_staff %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'admin:index' %}"><i class="ti-settings mr-1"></i>Admin</a>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main>
+    {% block content %}
+    <!-- O conteúdo específico de cada página será inserido aqui -->
+    {% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <!-- Footer Content -->
+    <div class="footer-temp bg-footer section border-bottom">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-4 col-sm-8 mb-5 mb-lg-0">
+            <!-- Logo -->
+            <a class="logo-footer" href="{% url 'index' %}"><img height="100px" class="img-fluid mb-4" src="{% static 'images/logo-escola.png' %}" alt="logo"></a>
+            <ul class="list-unstyled">
+              <li class="mb-2">Eldorado SP, BRASIL</li>
+              <li class="mb-2">+55 (13) 99999 9999</li>
+              <li class="mb-2">contato@seudominio.com</li>
+            </ul>
+          </div>
+          <!-- Company -->
+          <div class="col-lg-8 col-md-8 col-sm-8 col-6 mb-5 mb-md-0">
+            <h4 class="text-white mb-5">DIÁRIO DE CLASSE DIGITAL</h4>
+            <ul class="list-unstyled">
+              <li class="mb-3"><a class="text-color" href="{% url 'about' %}">Sobre Nós</a></li>             
+            </ul>
+          </div>
+          <!-- Links -->
+          
+        </div>
+      </div>
+    </div>
+    
+    <!-- Copyright -->
+    <div class="copyright py-4 bg-footer">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-7 text-sm-left text-center">
+            <p class="mb-0">Direitos Autorais ©
+              <script>
+                var CurrentYear = new Date().getFullYear()
+                document.write(CurrentYear)
+              </script>, projetado e desenvolvido por Alunos da Univesp</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+  <!-- Modal: Signup -->
+  <div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content rounded-0 border-0 p-4">
+        <div class="modal-header border-0">
+          <h3>Cadastrar</h3>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="login">
+            <form action="#" class="row">
+              <div class="col-12">
+                <input type="text" class="form-control mb-3" id="signupPhone" name="signupPhone" placeholder="Telefone">
+              </div>
+              <div class="col-12">
+                <input type="text" class="form-control mb-3" id="signupName" name="signupName" placeholder="Nome">
+              </div>
+              <div class="col-12">
+                <input type="email" class="form-control mb-3" id="signupEmail" name="signupEmail" placeholder="Email">
+              </div>
+              <div class="col-12">
+                <input type="password" class="form-control mb-3" id="signupPassword" name="signupPassword" placeholder="Senha">
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary">CADASTRAR</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Login -->
+  <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content rounded-0 border-0 p-4">
+        <div class="modal-header border-0">
+          <h3>Entrar</h3>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form action="{% url 'login' %}" method="post" class="row">
+            {% csrf_token %}
+            <div class="col-12">
+              <input type="text" class="form-control mb-3" id="loginPhone" name="loginPhone" placeholder="Telefone ou Email">
+            </div>
+            <div class="col-12">
+              <input type="password" class="form-control mb-3" id="loginPassword" name="loginPassword" placeholder="Senha">
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">ENTRAR</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Plugins -->
+  <script src="{% static 'plugins/jQuery/jquery.min.js' %}"></script>
+  <script src="{% static 'plugins/bootstrap/bootstrap.min.js' %}"></script>
+  <script src="{% static 'plugins/slick/slick.min.js' %}"></script>
+  <script src="{% static 'plugins/aos/aos.js' %}"></script>
+  <script src="{% static 'plugins/venobox/venobox.min.js' %}"></script>
+  <script src="{% static 'plugins/filterizr/jquery.filterizr.min.js' %}"></script>
+  
+  <!-- Main Script -->
+  <script src="{% static 'js/script.js' %}"></script>
+  
+  <!-- Bloco para JavaScript adicional específico da página -->
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

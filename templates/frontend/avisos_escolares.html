@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Avisos da Comunidade Escolar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h4 mb-0">País e/ou Responsáveis</h1>
+        </div>
+        
+        <div class="card-body">
+            <section class="mb-5">
+                <h2 class="h5 mb-3">Avisos da Comunidade Escolar</h2>
+                <div class="alert alert-info">
+                    {% if avisos %}
+                        {% for aviso in avisos %}
+                            <div class="mb-3 p-3 border-bottom">
+                                <h3 class="h6">{{ aviso.titulo }}</h3>
+                                <p>{{ aviso.mensagem }}</p>
+                                <small class="text-muted">Publicado em: {{ aviso.data_publicacao|date:"d/m/Y" }}</small>
+                                {% if aviso.autor %}
+                                    <small class="text-muted"> - Por: {{ aviso.autor }}</small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>Não há avisos no momento.</p>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

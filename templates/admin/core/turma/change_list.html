@@ -1,0 +1,325 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Container principal */
+    .turma-cards-container {
+        padding: 20px 0;
+        width: 100%;
+    }
+    
+    /* Header com botão de adicionar */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .add-turma-btn {
+        background-color: #447e9b;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: none;
+        font-weight: 400;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    
+    .add-turma-btn:hover {
+        background-color: #447e9b;
+        color: white;
+    }
+    
+    .add-turma-btn:before {
+        content: "+";
+        margin-right: 5px;
+        font-size: 1.1rem;
+    }
+    
+    /* Ano section */
+    .ano-section {
+        margin-bottom: 30px;
+    }
+    
+    .ano-header {
+        font-size: 1.2rem;
+        color: #447e9b;
+        margin: 0 0 15px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .ano-title {
+        font-weight: 600;
+    }
+    
+    .turma-count {
+        color: #447e9b;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+    
+    /* Grid de cards */
+    .turma-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+    
+    /* Card individual */
+    .turma-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .turma-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+        border-color: #79aec8;
+    }
+    
+    /* Cabeçalho do card com checkbox e botões */
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        background: #f9f9f9;
+    }
+    
+    .card-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    /* Conteúdo do card */
+    .card-body {
+        padding: 20px;
+        flex: 1;
+    }
+    
+    .card-body h3 {
+        margin: 0 0 10px 0;
+        color: #447e9b;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .card-body p {
+        margin: 0 0 8px 0;
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    
+    .card-body .meta {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #888;
+        padding-top: 8px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    /* Botões de ação */
+    .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .add-alunos-btn {
+        background-color: #447e9b;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    
+    .add-alunos-btn:hover {
+        background-color: #447e9b;
+    }
+    
+    .edit-delete-container {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .edit-btn, .delete-btn {
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background-color: transparent;
+        transition: background-color 0.2s, border-color 0.2s;
+        cursor: pointer;
+    }
+
+    .edit-btn:hover, .delete-btn:hover {
+        background-color: #e0e0e0;
+        border-color: #999;
+    }
+
+    .action-icon {
+        width: 12px;
+        height: 12px;
+        filter: none;
+    }
+
+    .edit-btn .action-icon {
+        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%); /* Blue color */
+    }
+
+    .delete-btn .action-icon {
+        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%); /* Blue color */
+    }
+    
+    /* Mensagem quando vazio */
+    .empty-message {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px dashed #ddd;
+    }
+
+    /* Responsividade */
+    @media (max-width: 1024px) {
+        .turma-cards {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .turma-cards {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .turma-cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .turma-card {
+            padding: 0; /* Padding agora é gerenciado por .card-body */
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="page-header">
+        <h1></h1>
+        <button class="add-turma-btn" onclick="window.location.href='{% url 'admin:core_turma_add' %}'">
+            Adicionar Turma
+        </button>
+    </div>
+    <div class="module" id="changelist">
+        <div class="turma-cards-container">
+            {% regroup cl.queryset by ano as turmas_por_ano %}
+            
+            {% if turmas_por_ano %}
+                {% for ano_group in turmas_por_ano %}
+                <div class="ano-section">
+                    <div class="ano-header">
+                        <span class="ano-title">Turmas de {{ ano_group.grouper }}</span>
+                        <span class="turma-count">{{ ano_group.list|length }} turma{{ ano_group.list|length|pluralize }}</span>
+                    </div>
+                    
+                    <div class="turma-cards">
+                        {% for turma in ano_group.list %}
+                        <div class="turma-card">
+                            <div class="card-header"><button class="add-alunos-btn" onclick="window.location.href='{% url 'admin:core_turma_alunos' turma.id %}'">
+                                Inserir alunos
+                            </button>
+                            <div class="card-actions">
+                                      <div class="edit-delete-container">
+                                        <button class="edit-btn" title="Editar" onclick="window.location.href='{% url 'admin:core_turma_change' turma.id %}'">
+                                            <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar" class="action-icon">
+                                        </button>
+                                        <button class="delete-btn" title="Excluir" onclick="if(confirm('Tem certeza que deseja excluir a turma {{ turma.nome }}?')) window.location.href='{% url 'admin:core_turma_delete' turma.id %}'">
+                                            <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir" class="action-icon">
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h3>{{ turma.nome }}</h3>
+                                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                                {% if turma.horario %}
+                                <div class="meta">
+                                    <span>Horário: {{ turma.horario }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">
+                    Nenhuma turma cadastrada.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+    // Função para atualizar o contador de seleção
+    function updateSelectionCounter() {
+        const selected = document.querySelectorAll('.turma-checkbox:checked').length;
+        const total = document.querySelectorAll('.turma-checkbox').length;
+        const counter = document.querySelector('#changelist-form .paginator');
+        if (counter) {
+            counter.textContent = `${selected} de ${total} selecionado${selected !== 1 ? 's' : ''}`;
+        }
+    }
+
+    // Adiciona eventos aos checkboxes
+    document.querySelectorAll('.turma-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectionCounter);
+    });
+
+    // Inicializa o contador ao carregar a página
+    document.addEventListener('DOMContentLoaded', updateSelectionCounter);
+</script>
+{% endblock %}
