@@ -1060,7 +1060,6 @@ class DiretorAdmin(admin.ModelAdmin):
     list_display = ("nome", "telefone")
     #search_fields = ("nome", "cpf")
     #ordering = ("nome",)
-    #change_list_template = 'admin/escola/diretor/change_list.html'
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}

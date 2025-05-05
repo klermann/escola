@@ -247,14 +247,14 @@ def consulta_boletim(request):
             validate_ra(ra_aluno)
         except ValidationError as e:
             messages.error(request, str(e))
-            return render(request, 'frontend/templates/frontend/consulta_boletim.html', {'boletim': None})
+            return render(request, 'frontend/templates/frontend/aluno.html', {'boletim': None})
 
         # Busca o aluno
         try:
             aluno = Aluno.objects.select_related('turma').get(ra=ra_aluno)
         except Aluno.DoesNotExist:
             messages.error(request, 'Aluno não encontrado com o RA informado.')
-            return render(request, 'frontend/consulta_boletim.html', {'boletim': None})
+            return render(request, 'frontend/aluno.html', {'boletim': None})
 
         # Disciplinas fixas que devem aparecer no boletim
         DISCIPLINAS_BOLETIM = [
@@ -320,7 +320,7 @@ def consulta_boletim(request):
             'disciplinas': disciplinas_data
         }
 
-    return render(request, 'frontend/consulta_boletim.html', {'boletim': boletim})
+    return render(request, 'frontend/aluno.html', {'boletim': boletim})
 
 def calendario_view(request):
     ano_letivo = 2026  # You can make this dynamic if needed
