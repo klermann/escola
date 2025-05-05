@@ -1,0 +1,98 @@
+     /* Variáveis CSS para o tema do Material Design */
+:root {
+  --md-primary: #417690; /* Cor primária */
+  --md-primary-variant: #417690; /* Variante da cor primária */
+  --md-secondary: #03DAC6; /* Cor secundária */
+  --md-on-primary: #FFFFFF; /* Cor do texto em fundo primário */
+  --md-on-secondary: #000000; /* Cor do texto em fundo secundário */
+  --md-surface: #FFFFFF; /* Cor de superfície */
+  --md-ripple: rgba(0, 0, 0, 0.1); /* Cor do efeito ripple */
+  --md-elevation-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Sombra para elevação */
+}
+
+/* Ajustes gerais para botões Bootstrap */
+.btn {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 8px 16px;
+  transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+/* 1. Elevated Button (Botão Elevado) */
+.btn-md-elevated {
+  background-color: var(--md-surface);
+  color: var(--md-primary);
+  box-shadow: var(--md-elevation-shadow);
+  border: none;
+}
+
+.btn-md-elevated:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background-color: var(--md-ripple);
+}
+
+.btn-md-elevated:active {
+  background-color: var(--md-ripple);
+}
+
+/* 2. Filled Button (Botão Preenchido) */
+.btn-md-filled {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.btn-md-filled:hover {
+  background-color: var(--md-primary-variant);
+}
+
+.btn-md-filled:active {
+  background-color: var(--md-ripple);
+}
+
+/* 3. Filled Tonal Button (Botão Preenchido Tonal) */
+.btn-md-filled-tonal {
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  border: none;
+}
+
+.btn-md-filled-tonal:hover {
+  background-color: color-mix(in srgb, var(--md-secondary) 80%, #000);
+}
+
+.btn-md-filled-tonal:active {
+  background-color: var(--md-ripple);
+}
+
+/* 4. Outlined Button (Botão Contornado) */
+.btn-md-outlined {
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-primary);
+}
+
+.btn-md-outlined:hover {
+  background-color: var(--md-ripple);
+}
+
+.btn-md-outlined:active {
+  background-color: color-mix(in srgb, var(--md-primary) 20%, transparent);
+}
+
+/* 5. Text Button (Botão de Texto) */
+.btn-md-text {
+  background-color: transparent;
+  color: var(--md-primary);
+  border: none;
+}
+
+.btn-md-text:hover {
+  background-color: var(--md-ripple);
+}
+
+.btn-md-text:active {
+  background-color: color-mix(in srgb, var(--md-primary) 20%, transparent);
+}
