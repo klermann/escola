@@ -97,6 +97,14 @@ class Usuario(models.Model):
     def __str__(self):
         return self.nome
 
+    class Meta:
+        permissions = [
+            ("pode_gerenciar_escola", "Pode gerenciar toda a escola"),
+            ("pode_gerenciar_turmas", "Pode gerenciar turmas e alunos"),
+            ("pode_lancar_notas", "Pode lançar notas e frequências"),
+            ("pode_ver_boletim", "Pode visualizar boletim"),
+        ]
+
 #############################################################################
 #############################################################################
 #############################################################################
@@ -160,8 +168,8 @@ class Turma(models.Model):
     ano = models.PositiveIntegerField(verbose_name='Ano', help_text='Ano letivo da turma')
 
     def __str__(self):
-        return f"{self.nome} - {self.escola.nome} ({self.ano})"    
-    
+        return f"{self.nome} - {self.escola.nome} ({self.ano})"
+
 #############################################################################
 #############################################################################
 #############################################################################

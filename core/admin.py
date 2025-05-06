@@ -47,6 +47,11 @@ class AlunoAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo aluno ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar aluno'  # Altere "Change aluno" para "Modificar aluno"
+        return super().change_view(request, object_id, form_url, extra_context)
         
 #############################################################################
 #############################################################################
@@ -487,6 +492,11 @@ class TurmaAdmin(admin.ModelAdmin):
         extra_context['title'] = 'Crie uma turma nova, insira alunos em uma turma, edite ou exclua uma'
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicionar turma'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
         context = self.admin_site.each_context(request)
         # Format data_fechamento for display
@@ -866,6 +876,11 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
         extra_context['title'] = 'Crie um calendário novo ou visualize e edite um calendário!'
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Adicionar Período Letivo'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def calendario_view(self, request, periodo_id):
         logger.debug(f"[calendario_view] Iniciando para periodo_id={periodo_id}")
 
@@ -979,6 +994,11 @@ class DisciplinaAdmin(admin.ModelAdmin):
         extra_context['disciplinas'] = disciplinas
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar disciplina'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -1023,6 +1043,11 @@ class BimestreAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar bimestre'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def get_urls(self):
         urls = super().get_urls()
         return urls
@@ -1043,6 +1068,11 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione uma nova Diretoria ou clique em uma para modificar'
         return super().changelist_view(request, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar diretoria'
+        return super().change_view(request, object_id, form_url, extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1065,6 +1095,11 @@ class DiretorAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo Diretor ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar diretor'
+        return super().change_view(request, object_id, form_url, extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1138,6 +1173,11 @@ class EscolaAdmin(admin.ModelAdmin):
         extra_context['escolas'] = escolas
         return super().changelist_view(request, extra_context=extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar escola'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     def get_urls(self):
         from django.urls import path
         urls = super().get_urls()
@@ -1208,6 +1248,12 @@ class ProfessorAdmin(admin.ModelAdmin):
         #extra_context['total_professores'] = self.get_queryset(request).count()
         extra_context['title'] = "Adicione, edite ou exclua um professor"  # Título personalizado
         return super().changelist_view(request, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Modificar professor'
+        return super().change_view(request, object_id, form_url, extra_context)
+
     
     def get_disciplinas(self, obj):
         return ", ".join([disciplina.nome for disciplina in obj.disciplinas.all()])
