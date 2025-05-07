@@ -28,8 +28,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# Application definition
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 INSTALLED_APPS = [
     'site_admin',
@@ -43,8 +44,27 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+# Configurações específicas do admin_interface
+ADMIN_INTERFACE_CONFIG = {
+    'theme': 'default',  # Pode ser 'default', 'dark', 'light', etc.
+    'name': 'DIÁRIO DE CLASSE DIGITAL',  # Nome personalizado
+    'logo': 'static/images/logo-escola.png',  # Caminho para seu logo (opcional)
+    'default_theme': {
+            'css_header_background_color': '#2A3F54',
+            'css_header_text_color': '#FFFFFF',
+            # ... todas as outras configurações do tema ...
+        }
+}
+
+
+# Configuração do admin_interface para sobrescrever admin padrão
+ADMIN_SITE_HEADER = "DIÁRIO DE CLASSE DIGITAL"
+ADMIN_SITE_TITLE = "Painel Administrativo"
+ADMIN_INDEX_TITLE = "Bem-vindo ao Painel de Controle"
 
 MIDDLEWARE = [
+
+    'core.middleware.ModalLoginMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

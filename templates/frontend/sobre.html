@@ -1,0 +1,148 @@
+{% extends "frontend/base.html" %}
+{% load static %}
+
+{% block title %}Sobre Nós | Educenter{% endblock %}
+{% block description %}Conheça nossa missão e tudo sobre o Educenter, sua plataforma de educação de qualidade.{% endblock %}
+
+{% block content %}
+<!-- page title -->
+<section class="page-title-section overlay" data-background="{% static 'images/backgrounds/page-title.jpg' %}">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <ul class="list-inline custom-breadcrumb mb-2">
+                    <li class="list-inline-item"><a class="h2 text-primary font-secondary" href="/">Home</a></li>
+                    <li class="list-inline-item text-white h3 font-secondary nasted">Sobre Nós</li>
+                </ul>
+                <p class="text-lighten mb-0">Conheça nossa missão e valores</p>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- /page title -->
+
+<!-- Sobre Nós Section -->
+<section class="section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="section-title">Nossa Missão</h2>
+                <div class="about-mission card p-4 shadow-sm">
+                    {% if about_us %}
+                        <p class="lead mb-0">{{ about_us.mission }}</p>
+                    {% else %}
+                        <p class="text-muted mb-0">Conteúdo não configurado. Por favor, adicione via Admin.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sobre o Educenter Section -->
+<section class="section bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="section-title">Sobre o Educenter</h2>
+
+                {% if about_educenter %}
+                    <div class="about-educenter-content card p-4 mb-5 shadow-sm">
+                        {{ about_educenter.content|linebreaks }}
+                    </div>
+
+                    <div class="about-features card p-4 shadow-sm">
+                        <h3 class="mb-4">Nossos Diferenciais</h3>
+                        <ul class="list-unstyled feature-list">
+                            {% for item in about_educenter.feature_items.all %}
+                                <li class="mb-3">
+                                    <i class="ti-check-box text-primary mr-2"></i>
+                                    {{ item.text }}
+                                </li>
+                            {% empty %}
+                                <li class="text-muted">Nenhum diferencial cadastrado. Adicione via Admin.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="card p-4 shadow-sm">
+                        <p class="text-muted mb-0">Conteúdo não configurado. Por favor, adicione via Admin.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+    <!-- Font Awesome para ícones -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .about-mission {
+            background-color: #f8f9fa;
+            border-left: 4px solid #47475e;
+        }
+
+        .about-educenter-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .feature-list li {
+            padding-left: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .feature-list li:hover {
+            transform: translateX(5px);
+        }
+
+        .feature-list li i {
+            position: absolute;
+            left: 0;
+            top: 0.25rem;
+        }
+
+        .section-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .section-title:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 3px;
+            background: #47475e;
+        }
+    </style>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function() {
+            // Efeito de animação para os itens de diferencial
+            $('.feature-list li').each(function(i) {
+                $(this).css('opacity', 0)
+                       .delay(i * 200)
+                       .animate({opacity: 1, left: '10px'}, 300);
+            });
+
+            // Suavizar rolagem para as seções
+            $('a[href^="#"]').on('click', function(event) {
+                var target = $(this.getAttribute('href'));
+                if(target.length) {
+                    event.preventDefault();
+                    $('html, body').stop().animate({
+                        scrollTop: target.offset().top - 100
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+{% endblock %}

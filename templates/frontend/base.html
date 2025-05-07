@@ -2,213 +2,308 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <!-- Meta Tags Básicas -->
-  <meta charset="utf-8">
-  <title>{% block title %}Educenter - Template HTML de Educação{% endblock %}</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="description" content="{% block description %}Template HTML5 de Educação{% endblock %}">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="author" content="Themefisher">
-  <meta name="generator" content="Themefisher Educenter HTML Template v1.0">
-  <meta name="theme-name" content="educenter" />
+    <!-- Meta Tags Básicas -->
+    <meta charset="utf-8">
+    <title>{% block title %}Educenter - Template HTML de Educação{% endblock %}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="{% block description %}Template HTML5 de Educação{% endblock %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="author" content="Themefisher">
+    <meta name="generator" content="Themefisher Educenter HTML Template v1.0">
+    <meta name="theme-name" content="educenter"/>
 
-  <!-- Favicon -->
-  <link rel="shortcut icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
-  <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'images/favicon.png' %}" type="image/x-icon">
 
-  <!-- CSS Plugins -->
-  <link rel="stylesheet" href="{% static 'plugins/bootstrap/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/slick/slick.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/themify-icons/themify-icons.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/animate/animate.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/aos/aos.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/venobox/venobox.css' %}">
+    <!-- CSS Plugins -->
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/slick/slick.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/themify-icons/themify-icons.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/animate/animate.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/aos/aos.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/venobox/venobox.css' %}">
 
-  <!-- CSS Principal -->
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
-  <!-- Bloco para CSS adicional específico da página -->
-  {% block extra_css %}{% endblock %}
+    <!-- Bloco para CSS adicional específico da página -->
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-  <!-- Preloader -->
-  <div class="preloader">
+<!-- Preloader -->
+<div class="preloader">
     <img src="{% static 'images/preloader.gif' %}" alt="pré-carregador">
-  </div>
+</div>
 
-  <!-- Header -->
-  <header class="fixed-top header">
+<!-- Header -->
+<header class="fixed-top header">
     <!-- Top Header -->
     <div class="top-header py-2 bg-white">
-      <div class="container">
-        <div class="row no-gutters">
-          <div class="col-lg-12 text-center text-lg-right">
-            <ul class="list-inline">
-              <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#loginModal" data-toggle="modal" data-target="#loginModal">ENTRAR</a></li>
-              <li class="list-inline-item"><a class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#signupModal" data-toggle="modal" data-target="#signupModal">CADASTRAR</a></li>
-            </ul>
-          </div>
+        <div class="container">
+            <div class="row no-gutters">
+                <div class="col-lg-12 text-center text-lg-right">
+                    <ul class="list-inline">
+                        <li class="list-inline-item"><a
+                                class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="#loginModal"
+                                data-toggle="modal" data-target="#loginModal">ENTRAR</a></li>
+                        <li class="list-inline-item"><a
+                                class="text-uppercase text-color p-sm-2 py-2 px-0 d-inline-block" href="/logout/"
+                                data-target="#signupModal">SAIR</a></li>
+
+                    </ul>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-    
+
     <!-- Navbar -->
     <div class="navigation w-100">
-      <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-dark p-0">
-          <a class="navbar-brand" href="{% url 'index' %}">
-            <img height="100" src="{% static 'images/logo-escola.png' %}" alt="logo">
-          </a>
-          <button class="navbar-toggler rounded-0" type="button" data-toggle="collapse" data-target="#navigation"
-            aria-controls="navigation" aria-expanded="false" aria-label="Alternar navegação">
-            <span class="navbar-toggler-icon"></span>
-          </button>
+        <div class="container">
+            <nav class="navbar navbar-expand-lg navbar-dark p-0">
+                <a class="navbar-brand" href="{% url 'index' %}">
+                    <img height="100" src="{% static 'images/logo-escola.png' %}" alt="logo">
+                </a>
+                <button class="navbar-toggler rounded-0" type="button" data-toggle="collapse" data-target="#navigation"
+                        aria-controls="navigation" aria-expanded="false" aria-label="Alternar navegação">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-          <div class="collapse navbar-collapse" id="navigation">
-            <ul class="navbar-nav ml-auto text-center">
-              <li class="nav-item {% if request.path == '/' %}active{% endif %}">
-                <a class="nav-link" href="{% url 'index' %}">Início</a>
-              </li>
-              <li class="nav-item {% if 'aluno' in request.path %}active{% endif %}">
-                <a class="nav-link" href="{% url 'aluno' %}">Aluno</a>
-              </li>
-              <li class="nav-item {% if 'about' in request.path %}active{% endif %}">
-                <a class="nav-link" href="{% url 'about' %}">Sobre</a>
-              </li>
-              <!-- Link para o Admin -->
-              {% if user.is_authenticated and user.is_staff %}
+                <div class="collapse navbar-collapse" id="navigation">
+                    <ul class="navbar-nav ml-auto text-center">
+                        <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                            <a class="nav-link" href="{% url 'index' %}">Início</a>
+                        </li>
+                        <li class="nav-item {% if 'aluno' in request.path %}active{% endif %}">
+                            <a class="nav-link" href="{% url 'aluno' %}" data-restricted>Área do Aluno</a>
+                        </li>
+                        <li class="nav-item {% if 'sobre' in request.path %}active{% endif %}">
+                            <a class="nav-link" href="{% url 'sobre' %}">Sobre</a>
+                        </li>
+                        <!-- Link para o Admin -->
+                        {% if user.is_authenticated and user.is_staff %}
 
-              {% endif %}<li class="nav-item">
-                  <a class="nav-link" href="{% url 'admin:index' %}"><i class="ti-settings mr-1"></i>Admin</a>
-                </li>
-            </ul>
-          </div>
-        </nav>
-      </div>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin:index' %}" data-restricted><i class="ti-settings mr-1"></i>Admin</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
     </div>
-  </header>
+</header>
 
-  <!-- Conteúdo Principal -->
-  <main>
+<!-- Conteúdo Principal -->
+<main>
     {% block content %}
-    <!-- O conteúdo específico de cada página será inserido aqui -->
+        <!-- O conteúdo específico de cada página será inserido aqui -->
     {% endblock %}
-  </main>
+</main>
 
-  <!-- Footer -->
-  <footer>
+<!-- Footer -->
+<footer>
     <!-- Footer Content -->
     <div class="footer-temp bg-footer section border-bottom">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-4 col-sm-8 mb-5 mb-lg-0">
-            <!-- Logo -->
-            <a class="logo-footer" href="{% url 'index' %}"><img height="100px" class="img-fluid mb-4" src="{% static 'images/logo-escola.png' %}" alt="logo"></a>
-            <ul class="list-unstyled">
-              <li class="mb-2">Eldorado SP, BRASIL</li>
-              <li class="mb-2">+55 (13) 99999 9999</li>
-              <li class="mb-2">contato@seudominio.com</li>
-            </ul>
-          </div>
-          
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-sm-8 mb-5 mb-lg-0">
+                    <!-- Logo -->
+                    <a class="logo-footer" href="{% url 'index' %}"><img height="100px" class="img-fluid mb-4"
+                                                                         src="{% static 'images/logo-escola.png' %}"
+                                                                         alt="logo"></a>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">Eldorado SP, BRASIL</li>
+                        <li class="mb-2">+55 (13) 99999 9999</li>
+                        <li class="mb-2">contato@seudominio.com</li>
+                    </ul>
+                </div>
+
+            </div>
         </div>
-      </div>
     </div>
-    
+
     <!-- Copyright -->
     <div class="copyright py-4 bg-footer">
-      <div class="container">
-        <div class="row">
-          <div class="col-sm-7 text-sm-left text-center">
-            <p class="mb-0">Direitos Autorais ©
-              <script>
-                var CurrentYear = new Date().getFullYear()
-                document.write(CurrentYear)
-              </script>, projetado e desenvolvido por Alunos da Univesp</a>
-            </p>
-          </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-7 text-sm-left text-center">
+                    <p class="mb-0">Direitos Autorais ©
+                        <script>
+                            var CurrentYear = new Date().getFullYear()
+                            document.write(CurrentYear)
+                        </script>
+                        , projetado e desenvolvido por Alunos da Univesp</a>
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </footer>
+</footer>
+<!-- Modal de Acesso Restrito -->
+<div class="modal fade" id="restrictedAccessModal" tabindex="-1" role="dialog"
+     aria-labelledby="restrictedAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="restrictedAccessModalLabel">Acesso Restrito</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="ti-lock icon-lg text-warning mb-4"></i>
+                    <p>Você precisa estar logado para acessar esta página.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary">
+                    <i class="ti-user mr-2"></i>Fazer Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
-  <!-- Modals -->
-  <!-- Modal: Signup -->
-  <div class="modal fade" id="signupModal" tabindex="-1" role="dialog" aria-hidden="true">
+!-- Modal: Login -->
+<div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content rounded-0 border-0 p-4">
-        <div class="modal-header border-0">
-          <h3>Cadastrar</h3>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-            <span aria-hidden="true">×</span>
-          </button>
+        <div class="modal-content rounded-0 border-0 p-4">
+            <div class="modal-header border-0">
+                <h3>Entrar</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" method="post" action="{% url 'login' %}" class="row">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.GET.next }}">
+                    <div class="col-12">
+                        <input type="text" class="form-control mb-3" id="id_username" name="username"
+                               placeholder="Usuário" required>
+                    </div>
+                    <div class="col-12">
+                        <input type="password" class="form-control mb-3" id="id_password" name="password"
+                               placeholder="Senha" required>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">ENTRAR</button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="modal-body">
-          <div class="login">
-            <form action="#" class="row">
-              <div class="col-12">
-                <input type="text" class="form-control mb-3" id="signupPhone" name="signupPhone" placeholder="Telefone">
-              </div>
-              <div class="col-12">
-                <input type="text" class="form-control mb-3" id="signupName" name="signupName" placeholder="Nome">
-              </div>
-              <div class="col-12">
-                <input type="email" class="form-control mb-3" id="signupEmail" name="signupEmail" placeholder="Email">
-              </div>
-              <div class="col-12">
-                <input type="password" class="form-control mb-3" id="signupPassword" name="signupPassword" placeholder="Senha">
-              </div>
-              <div class="col-12">
-                <button type="submit" class="btn btn-primary">CADASTRAR</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <!-- Modal: Login -->
-  <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content rounded-0 border-0 p-4">
-        <div class="modal-header border-0">
-          <h3>Entrar</h3>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form action="{% url 'login' %}" method="post" class="row">
-            {% csrf_token %}
-            <div class="col-12">
-              <input type="text" class="form-control mb-3" id="loginPhone" name="loginPhone" placeholder="Telefone ou Email">
-            </div>
-            <div class="col-12">
-              <input type="password" class="form-control mb-3" id="loginPassword" name="loginPassword" placeholder="Senha">
-            </div>
-            <div class="col-12">
-              <button type="submit" class="btn btn-primary">ENTRAR</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+<!-- JavaScript Plugins -->
+<script src="{% static 'plugins/jQuery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap/bootstrap.min.js' %}"></script>
+<script src="{% static 'plugins/slick/slick.min.js' %}"></script>
+<script src="{% static 'plugins/aos/aos.js' %}"></script>
+<script src="{% static 'plugins/venobox/venobox.min.js' %}"></script>
+<script src="{% static 'plugins/filterizr/jquery.filterizr.min.js' %}"></script>
 
-  <!-- JavaScript Plugins -->
-  <script src="{% static 'plugins/jQuery/jquery.min.js' %}"></script>
-  <script src="{% static 'plugins/bootstrap/bootstrap.min.js' %}"></script>
-  <script src="{% static 'plugins/slick/slick.min.js' %}"></script>
-  <script src="{% static 'plugins/aos/aos.js' %}"></script>
-  <script src="{% static 'plugins/venobox/venobox.min.js' %}"></script>
-  <script src="{% static 'plugins/filterizr/jquery.filterizr.min.js' %}"></script>
-  
-  <!-- Main Script -->
-  <script src="{% static 'js/script.js' %}"></script>
-  
-  <!-- Bloco para JavaScript adicional específico da página -->
-  {% block extra_js %}{% endblock %}
+<!-- Main Script -->
+<script src="{% static 'js/script.js' %}"></script>
+
+<!-- Bloco para JavaScript adicional específico da página -->
+{% block extra_js %}
+    <script>
+        $(document).ready(function () {
+            // Armazena a URL que requer login
+            let nextUrl = '';
+
+            // Intercepta cliques em links protegidos
+            $(document).on('click', 'a[href*="/aluno/"]', function (e) {
+                if (!$(this).hasClass('bypass-login') && !$(this).data('target')) {
+                    e.preventDefault();
+                    nextUrl = $(this).attr('href');
+                    $('#nextUrl').val(nextUrl);
+                    $('#loginModal').modal('show');
+                }
+            });
+
+            // Configura o formulário de login via AJAX
+            $('#loginForm').on('submit', function (e) {
+                e.preventDefault();
+                const form = $(this);
+
+                $.ajax({
+                    type: 'POST',
+                    url: '{% url "ajax_login" %}',
+                    data: form.serialize(),
+                    headers: {
+                        'X-CSRFToken': form.find('input[name="csrfmiddlewaretoken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#loginModal').modal('hide');
+                            window.location.href = response.redirect_url || '/';
+                        } else {
+                            alert(response.message || 'Login falhou. Verifique suas credenciais.');
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Ocorreu um erro durante o login. Por favor, tente novamente.');
+                    }
+                });
+            });
+
+            // Abre modal se houver parâmetro next na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlNext = urlParams.get('next');
+            if (urlNext) {
+                nextUrl = urlNext;
+                $('#nextUrl').val(nextUrl);
+                $('#loginModal').modal('show');
+                // Limpa a URL para não mostrar o parâmetro next
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Abre modal se houver parâmetro next na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlNext = urlParams.get('next');
+
+            if (urlNext) {
+                $('#nextUrl').val(urlNext);
+                $('#loginModal').modal('show');
+            }
+
+            // Intercepta cliques em links protegidos
+            $(document).on('click', 'a[href*="/aluno/"]', function (e) {
+                if (!$(this).hasClass('bypass-login')) {
+                    e.preventDefault();
+                    $('#nextUrl').val($(this).attr('href'));
+                    $('#loginModal').modal('show');
+                }
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Verifica se deve mostrar o modal de acesso restrito
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('restricted')) {
+                $('#restrictedAccessModal').modal('show');
+            }
+
+            // Intercepta cliques em links protegidos
+            $(document).on('click', 'a[data-restricted]', function (e) {
+                e.preventDefault();
+                const nextUrl = $(this).attr('href');
+                $('#restrictedAccessModal').modal('show');
+                // Atualiza o link de login para incluir a página de destino
+                $('#restrictedAccessModal .btn-primary').attr('href', `{% url 'login' %}?next=${nextUrl}`);
+            });
+        });
+    </script>
+{% endblock %}
 </body>
 </html>

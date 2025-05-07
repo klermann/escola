@@ -1,12 +1,14 @@
 # Importações padrão do Django
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import re
+from django import forms
 
 # Importações locais (relativas)
 from .constants import (
@@ -97,14 +99,6 @@ class Usuario(models.Model):
     def __str__(self):
         return self.nome
 
-    class Meta:
-        permissions = [
-            ("pode_gerenciar_escola", "Pode gerenciar toda a escola"),
-            ("pode_gerenciar_turmas", "Pode gerenciar turmas e alunos"),
-            ("pode_lancar_notas", "Pode lançar notas e frequências"),
-            ("pode_ver_boletim", "Pode visualizar boletim"),
-        ]
-
 #############################################################################
 #############################################################################
 #############################################################################
@@ -178,9 +172,9 @@ def validate_ra(value):
     if not re.match(r'^0000\d{9}[0-9X]$', value):
         raise ValidationError('RA deve estar no formato 0000 + 9 dígitos + 1 dígito/X')
 
+
 class Aluno(models.Model):
     nome = models.CharField(max_length=100)
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='alunos')
     ativo = models.BooleanField(default=True)
     ra = models.CharField(
         max_length=14, 
@@ -190,7 +184,16 @@ class Aluno(models.Model):
     )
     data_nascimento = models.DateField(verbose_name='Data de Nascimento', null=True, blank=True)
     quilombola = models.BooleanField(default=False, verbose_name='Quilombola')  # Novo campo
-    
+
+    # Relacionamentos ManyToMany (igual ao Professor)
+    turmas = models.ManyToManyField(
+        'Turma',
+        blank=True,
+        related_name="alunos",
+        verbose_name="Turmas",
+        help_text="Selecione as turmas deste aluno.",
+    )
+
     @admin.display(description='Data Nasc.', ordering='data_nascimento')
     def data_nascimento_formatada(self):
         return self.data_nascimento.strftime('%d/%m/%Y') if self.data_nascimento else ''
@@ -218,6 +221,20 @@ class Disciplina(models.Model):
     def __str__(self):
         return self.nome
 
+class DisciplinaForm(forms.ModelForm):
+    class Meta:
+        model = Disciplina
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'placeholder': 'Ex: Matemática, Português, História...',
+                'class': 'form-control'
+            })
+        }
+        help_texts = {
+            'nome': 'Digite o nome completo da disciplina'
+        }
+
 class Bimestre(models.Model):
     nome = models.CharField(max_length=50)
     ano_letivo = models.IntegerField()
@@ -229,16 +246,92 @@ class Bimestre(models.Model):
         return f"{self.nome} - {self.dias_letivo} dias | ano- {self.ano_letivo}"
 
     def clean(self):
-        if self.data_fim and self.data_inicio and self.data_fim < self.data_inicio:
-            raise ValidationError('A data de fim não pode ser anterior à data de início.')
-        
-        overlapping = Bimestre.objects.filter(
-            ano_letivo=self.ano_letivo,
-            data_inicio__lte=self.data_fim,
-            data_fim__gte=self.data_inicio
-        ).exclude(id=self.id)
-        if overlapping.exists():
-            raise ValidationError("Este bimestre sobrepõe-se a outro bimestre no mesmo ano letivo.")
+        # Verifica se ambas as datas estão preenchidas antes de comparar
+        if self.data_inicio and self.data_fim:
+            if self.data_fim < self.data_inicio:
+                raise ValidationError('A data de fim não pode ser anterior à data de início.')
+
+            # Só verifica sobreposição se ambas as datas estiverem preenchidas
+            overlapping = Bimestre.objects.filter(
+                ano_letivo=self.ano_letivo,
+                data_inicio__isnull=False,  # Garante que data_inicio não é None
+                data_fim__isnull=False,  # Garante que data_fim não é None
+                data_inicio__lte=self.data_fim,
+                data_fim__gte=self.data_inicio
+            ).exclude(id=self.id if self.id else None)  # Exclui o próprio registro se estiver sendo editado
+
+            if overlapping.exists():
+                raise ValidationError("Este bimestre sobrepõe-se a outro bimestre no mesmo ano letivo.")
+
+        # Validação adicional para garantir que campos obrigatórios estejam preenchidos
+        if not self.nome:
+            raise ValidationError({'nome': 'O nome do bimestre é obrigatório'})
+
+        if not self.ano_letivo:
+            raise ValidationError({'ano_letivo': 'O ano letivo é obrigatório'})
+
+        if not self.dias_letivo:
+            raise ValidationError({'dias_letivo': 'O número de dias letivos é obrigatório'})
+
+
+class BimestreForm(forms.ModelForm):
+        class Meta:
+            model = Bimestre
+            fields = ['nome', 'ano_letivo', 'data_inicio', 'data_fim', 'dias_letivo']
+            widgets = {
+                'nome': forms.TextInput(attrs={
+                    'placeholder': 'Ex: 1º Bimestre, Primeiro Bimestre...',
+                    'class': 'form-control',
+                    'required': 'required'
+                }),
+                'ano_letivo': forms.NumberInput(attrs={
+                    'placeholder': 'Ex: 2023, 2024...',
+                    'class': 'form-control',
+                    'required': 'required',
+                    'min': '2000',
+                    'max': '2100'
+                }),
+                'data_inicio': forms.DateInput(attrs={
+                    'placeholder': 'DD/MM/AAAA',
+                    'class': 'form-control',
+                    'type': 'date',
+                    'required': 'required'
+                }),
+                'data_fim': forms.DateInput(attrs={
+                    'placeholder': 'DD/MM/AAAA',
+                    'class': 'form-control',
+                    'type': 'date',
+                    'required': 'required'
+                }),
+                'dias_letivo': forms.NumberInput(attrs={
+                    'placeholder': 'Ex: 45, 50...',
+                    'class': 'form-control',
+                    'min': '1',
+                    'required': 'required'
+                })
+            }
+
+        def clean(self):
+            cleaned_data = super().clean()
+            data_inicio = cleaned_data.get('data_inicio')
+            data_fim = cleaned_data.get('data_fim')
+
+            if data_inicio and data_fim and data_fim < data_inicio:
+                self.add_error('data_fim', 'A data de fim não pode ser anterior à data de início.')
+
+            return cleaned_data
+
+        def clean_nome(self):
+            nome = self.cleaned_data['nome']
+            if not any(char.isdigit() for char in nome):
+                raise forms.ValidationError("O nome deve conter o número do bimestre (Ex: 1º Bimestre)")
+            return nome
+
+        def clean_ano_letivo(self):
+            ano = self.cleaned_data['ano_letivo']
+            if ano < 2000 or ano > 2100:
+                raise forms.ValidationError("Ano letivo deve estar entre 2000 e 2100")
+            return ano
 
 class Avaliacao(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='avaliacoes')
@@ -254,11 +347,10 @@ class Avaliacao(models.Model):
 
     def __str__(self):
         return f"{self.aluno.nome} - Disciplina {self.disciplina.nome} - {self.bimestre.nome}: {self.nota}"
-    
+
     def save(self, *args, **kwargs):
-        # Ensure the turma matches the aluno's turma
-        if self.aluno.turma != self.turma:
-            self.turma = self.aluno.turma
+        if not self.turma_id or not self.aluno.turmas.filter(id=self.turma_id).exists():
+            raise ValidationError("O aluno não está matriculado nesta turma")
         super().save(*args, **kwargs)
         
 class Frequencia(models.Model):
@@ -269,8 +361,8 @@ class Frequencia(models.Model):
         ('nao_letivo', 'Dia Não Letivo'),
     ]
     
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='frequencias')
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='frequencias')
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
     data = models.DateField(verbose_name='Data')
     status = models.CharField(max_length=20, choices=PRESENCA_CHOICES)
     disciplina = models.ForeignKey(Disciplina, on_delete=models.SET_NULL, null=True, blank=True)
@@ -282,11 +374,12 @@ class Frequencia(models.Model):
     
     def __str__(self):
         return f"{self.aluno.nome} - {self.data} - {self.get_status_display()}"
-    
+
     def save(self, *args, **kwargs):
-        # Garante que a turma do registro de frequência seja a mesma do aluno
-        if self.aluno.turma != self.turma:
-            self.turma = self.aluno.turma
+        # Verifica se o aluno está matriculado na turma
+        if not self.turma_id or not self.aluno.turmas.filter(id=self.turma_id).exists():
+            raise ValidationError("O aluno não está matriculado nesta turma")
+
         super().save(*args, **kwargs)
         
     def __str__(self):

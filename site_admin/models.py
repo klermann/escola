@@ -39,3 +39,84 @@ class HeroContent(models.Model):
 
     def __str__(self):
         return self.title
+
+class AboutUs(models.Model):
+    """
+    Modelo para a seção "Sobre Nós" na página inicial
+    """
+    mission = models.TextField(
+        "Nossa Missão",
+        help_text="Texto que descreve a missão da empresa"
+    )
+    is_active = models.BooleanField(
+        "Ativo",
+        default=True,
+        help_text="Marque para exibir esta seção no site"
+    )
+
+    class Meta:
+        verbose_name = "Sobre Nós"
+        verbose_name_plural = "Sobre Nós"
+
+    def __str__(self):
+        return "Configurações Sobre Nós"
+
+    def save(self, *args, **kwargs):
+        # Garante que só exista uma instância deste modelo
+        self.id = 1
+        super().save(*args, **kwargs)
+
+
+class AboutEducenter(models.Model):
+    """
+    Modelo para a seção "Sobre o Educenter" na página inicial
+    """
+    title = models.CharField(
+        "Título",
+        max_length=200,
+        default="Sobre o Educenter"
+    )
+    content = models.TextField(
+        "Conteúdo",
+        help_text="Texto principal sobre o Educenter"
+    )
+    is_active = models.BooleanField(
+        "Ativo",
+        default=True,
+        help_text="Marque para exibir esta seção no site"
+    )
+
+    class Meta:
+        verbose_name = "Sobre o Educenter"
+        verbose_name_plural = "Sobre o Educenter"
+
+    def __str__(self):
+        return self.title
+
+
+class FeatureItem(models.Model):
+    """
+    Modelo para os itens de características (checkboxes) na seção Sobre o Educenter
+    """
+    about_section = models.ForeignKey(
+        AboutEducenter,
+        on_delete=models.CASCADE,
+        related_name="feature_items"
+    )
+    text = models.TextField(
+        "Texto do item",
+        help_text="Texto que aparecerá com o checkbox"
+    )
+    order = models.PositiveIntegerField(
+        "Ordem",
+        default=0,
+        help_text="Ordem de exibição dos itens"
+    )
+
+    class Meta:
+        verbose_name = "Item de Característica"
+        verbose_name_plural = "Itens de Característica"
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Item {self.order} - {self.text[:50]}..."

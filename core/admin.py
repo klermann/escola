@@ -1,6 +1,8 @@
 # core/admin.py
 from django.contrib import admin, messages
 from datetime import datetime, date, timedelta
+
+from django.core.exceptions import ValidationError
 from django.utils.html import format_html
 from django.template.response import TemplateResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -22,36 +24,42 @@ class FrequenciaForm(forms.ModelForm):
     class Meta:
         model = Frequencia
         fields = '__all__'
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and self.instance.aluno:
-            self.fields['aluno'].queryset = Aluno.objects.filter(turma=self.instance.aluno.turma)
+            # Filtra alunos que estão em pelo menos uma turma em comum com a turma selecionada
+            if self.instance.turma:
+                self.fields['aluno'].queryset = Aluno.objects.filter(
+                    turmas=self.instance.turma
+                ).distinct()
         elif 'initial' in kwargs and 'turma' in kwargs['initial']:
-            self.fields['aluno'].queryset = Aluno.objects.filter(turma=kwargs['initial']['turma'])
+            turma = kwargs['initial']['turma']
+            self.fields['aluno'].queryset = Aluno.objects.filter(
+                turmas=turma
+            ).distinct()
         else:
-            if hasattr(Aluno, 'ativo'):
-                self.fields['aluno'].queryset = Aluno.objects.filter(ativo=True)
-            else:
-                self.fields['aluno'].queryset = Aluno.objects.all()
+            self.fields['aluno'].queryset = Aluno.objects.filter(ativo=True)
                 
 @admin.register(Aluno)
 class AlunoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'turma', 'ra', 'data_nascimento_formatada', 'ativo', 'quilombola')
+    list_display = ('nome', 'ra', 'data_nascimento_formatada', 'ativo', 'quilombola', 'turmas_list')
     search_fields = ('nome', 'ra')
-    list_per_page = 10
+    list_filter = ('ativo', 'quilombola', 'turmas')
+    list_per_page = 20
     date_hierarchy = 'data_nascimento'
     ordering = ('nome',)
+    filter_horizontal = ('turmas',)  # Para melhor interface de seleção de turmas
+
+    def turmas_list(self, obj):
+        return ", ".join([t.nome for t in obj.turmas.all()])
+
+    turmas_list.short_description = 'Turmas'
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo aluno ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar aluno'  # Altere "Change aluno" para "Modificar aluno"
-        return super().change_view(request, object_id, form_url, extra_context)
         
 #############################################################################
 #############################################################################
@@ -82,7 +90,7 @@ class FrequenciaAdmin(admin.ModelAdmin):
 
     def frequencia_form_view(self, request, turma_id):
         turma = get_object_or_404(Turma, id=turma_id)
-        alunos = Aluno.objects.filter(turma=turma, ativo=True).order_by('nome')
+        alunos = turma.alunos.filter(ativo=True).order_by('nome')
 
         # 1. Tenta obter a data da URL
         data_selecionada = request.GET.get('data')
@@ -160,6 +168,9 @@ class FrequenciaAdmin(admin.ModelAdmin):
         logger.debug(f"Processando frequências para turma {turma.id} na data {data}")
 
         for aluno in alunos:
+            if not aluno.turmas.filter(id=turma.id).exists():
+                error_messages.append(f"Aluno {aluno.nome} não está matriculado na turma {turma.nome}")
+                continue
             status_key = f"status_{aluno.id}"
             status = request.POST.get(status_key)
 
@@ -230,7 +241,11 @@ class FrequenciaAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if obj.aluno and not obj.turma:
-            obj.turma = obj.aluno.turma
+            # Pega a primeira turma do aluno ou levanta erro se não houver
+            turma = obj.aluno.turmas.first()
+            if not turma:
+                raise ValidationError("O aluno não está matriculado em nenhuma turma")
+            obj.turma = turma
         super().save_model(request, obj, form, change)
 
     def get_changeform_initial_data(self, request):
@@ -289,37 +304,36 @@ class TurmaAdmin(admin.ModelAdmin):
 
     def manage_alunos_view(self, request, turma_id):
         turma = get_object_or_404(Turma, id=turma_id)
-        alunos = turma.alunos.all().order_by('nome')
-        
+
         if request.method == 'POST':
-            if 'ra' in request.POST:
+            if 'ra' in request.POST:  # Adicionar aluno
                 ra = request.POST.get('ra')
                 try:
                     aluno = Aluno.objects.get(ra=ra)
-                    turma.alunos.add(aluno)
+                    turma.alunos.add(aluno)  # Usando o relacionamento ManyToMany
                     messages.success(request, f'Aluno {aluno.nome} adicionado à turma com sucesso!')
                 except Aluno.DoesNotExist:
                     messages.error(request, f'Aluno com RA {ra} não encontrado.')
-                except Exception as e:
-                    messages.error(request, f'Erro ao adicionar aluno: {str(e)}')
-            elif 'aluno_id' in request.POST:
+
+            elif 'aluno_id' in request.POST:  # Remover aluno
                 aluno_id = request.POST.get('aluno_id')
                 try:
                     aluno = Aluno.objects.get(id=aluno_id)
-                    turma.alunos.remove(aluno)
+                    turma.alunos.remove(aluno)  # Usando o relacionamento ManyToMany
                     messages.success(request, f'Aluno {aluno.nome} removido da turma com sucesso!')
                 except Exception as e:
                     messages.error(request, f'Erro ao remover aluno: {str(e)}')
-            
+
             return redirect('admin:core_turma_alunos', turma_id=turma.id)
-        
+
+        alunos = turma.alunos.all().order_by('nome')
         context = {
             **self.admin_site.each_context(request),
             'turma': turma,
             'alunos': alunos,
             'opts': self.model._meta,
         }
-        
+
         return TemplateResponse(
             request,
             'admin/core/turma/manage_alunos.html',
@@ -328,26 +342,26 @@ class TurmaAdmin(admin.ModelAdmin):
 
     def add_aluno_view(self, request, turma_id):
         turma = get_object_or_404(Turma, id=turma_id)
-        
+
         if request.method == 'POST':
             ra = request.POST.get('ra')
             try:
                 aluno = Aluno.objects.get(ra=ra)
-                turma.alunos.add(aluno)
+                turma.alunos.add(aluno)  # Usa o relacionamento ManyToMany
                 messages.success(request, f'Aluno {aluno.nome} adicionado à turma com sucesso!')
-                return redirect('admin:manage_alunos', turma_id=turma.id)
+                return redirect('admin:core_turma_alunos', turma_id=turma.id)
             except Aluno.DoesNotExist:
                 messages.error(request, f'Aluno com RA {ra} não encontrado.')
             except Exception as e:
                 messages.error(request, f'Erro ao adicionar aluno: {str(e)}')
-        
+
         context = {
             **self.admin_site.each_context(request),
             'turma': turma,
             'title': f'Adicionar Aluno - {turma.nome}',
             'opts': self.model._meta,
         }
-        
+
         return TemplateResponse(
             request,
             'admin/core/turma/add_aluno.html',
@@ -357,15 +371,15 @@ class TurmaAdmin(admin.ModelAdmin):
     def remove_aluno_view(self, request, turma_id, aluno_id):
         turma = get_object_or_404(Turma, id=turma_id)
         aluno = get_object_or_404(Aluno, id=aluno_id)
-        
+
         if request.method == 'POST':
             try:
-                turma.alunos.remove(aluno)
+                turma.alunos.remove(aluno)  # Usa o relacionamento ManyToMany
                 messages.success(request, f'Aluno {aluno.nome} removido da turma com sucesso!')
             except Exception as e:
                 messages.error(request, f'Erro ao remover aluno: {str(e)}')
-        
-        return redirect('admin:manage_alunos', turma_id=turma.id)
+
+        return redirect('admin:core_turma_alunos', turma_id=turma.id)
 
     def avaliacao_form_view(self, request, turma_id):
         try:
@@ -374,7 +388,8 @@ class TurmaAdmin(admin.ModelAdmin):
             messages.error(request, f"Turma com ID {turma_id} não encontrada.")
             return redirect('admin:core_turma_changelist')
 
-        alunos = Aluno.objects.filter(turma=turma)
+        # Alterado para usar o relacionamento ManyToMany
+        alunos = turma.alunos.all()
         disciplinas = Disciplina.objects.all()
         bimestres = Bimestre.objects.all()
 
@@ -492,11 +507,6 @@ class TurmaAdmin(admin.ModelAdmin):
         extra_context['title'] = 'Crie uma turma nova, insira alunos em uma turma, edite ou exclua uma'
         return super().changelist_view(request, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Adicionar turma'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
         context = self.admin_site.each_context(request)
         # Format data_fechamento for display
@@ -539,11 +549,12 @@ class AvaliacaoAdmin(admin.ModelAdmin):
     def avaliacao_form_view(self, request, turma_id):
         try:
             turma = get_object_or_404(Turma, id=turma_id)
+            alunos = turma.alunos.all()
         except Turma.DoesNotExist:
             messages.error(request, f"Turma com ID {turma_id} não encontrada.")
             return redirect('admin:core_avaliacao_changelist')
 
-        alunos = Aluno.objects.filter(turma=turma)
+        alunos = turma.alunos.all()
         disciplinas = Disciplina.objects.all()
         bimestres = Bimestre.objects.all()
 
@@ -876,11 +887,6 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
         extra_context['title'] = 'Crie um calendário novo ou visualize e edite um calendário!'
         return super().changelist_view(request, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Adicionar Período Letivo'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def calendario_view(self, request, periodo_id):
         logger.debug(f"[calendario_view] Iniciando para periodo_id={periodo_id}")
 
@@ -994,11 +1000,6 @@ class DisciplinaAdmin(admin.ModelAdmin):
         extra_context['disciplinas'] = disciplinas
         return super().changelist_view(request, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar disciplina'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -1043,11 +1044,6 @@ class BimestreAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar bimestre'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def get_urls(self):
         urls = super().get_urls()
         return urls
@@ -1068,11 +1064,6 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione uma nova Diretoria ou clique em uma para modificar'
         return super().changelist_view(request, extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar diretoria'
-        return super().change_view(request, object_id, form_url, extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1095,11 +1086,6 @@ class DiretorAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo Diretor ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar diretor'
-        return super().change_view(request, object_id, form_url, extra_context)
     
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
@@ -1173,11 +1159,6 @@ class EscolaAdmin(admin.ModelAdmin):
         extra_context['escolas'] = escolas
         return super().changelist_view(request, extra_context=extra_context)
 
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar escola'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     def get_urls(self):
         from django.urls import path
         urls = super().get_urls()
@@ -1248,12 +1229,6 @@ class ProfessorAdmin(admin.ModelAdmin):
         #extra_context['total_professores'] = self.get_queryset(request).count()
         extra_context['title'] = "Adicione, edite ou exclua um professor"  # Título personalizado
         return super().changelist_view(request, extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Modificar professor'
-        return super().change_view(request, object_id, form_url, extra_context)
-
     
     def get_disciplinas(self, obj):
         return ", ".join([disciplina.nome for disciplina in obj.disciplinas.all()])

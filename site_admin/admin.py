@@ -1,6 +1,6 @@
 # site_admin/admin.py
 from django.contrib import admin
-from site_admin.models import HeroContent, FeatureBlock  
+from site_admin.models import HeroContent, FeatureBlock, AboutUs, AboutEducenter, FeatureItem
 
 @admin.register(FeatureBlock)
 class FeatureBlockAdmin(admin.ModelAdmin):
@@ -24,4 +24,19 @@ class HeroContentAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['title'] = 'Crie um ou até três slides para a Home page do site'
         return super().changelist_view(request, extra_context=extra_context)
-        
+
+class FeatureItemInline(admin.TabularInline):
+    model = FeatureItem
+    extra = 1
+
+@admin.register(AboutUs)
+class AboutUsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        # Permite apenas uma instância
+        return not AboutUs.objects.exists()
+
+@admin.register(AboutEducenter)
+class AboutEducenterAdmin(admin.ModelAdmin):
+    inlines = [FeatureItemInline]
+
+admin.site.register(FeatureItem)

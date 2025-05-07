@@ -45,10 +45,37 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from .models import Aluno, Avaliacao, Frequencia, Disciplina, Bimestre, Turma
-from site_admin.models import HeroContent, FeatureBlock
+from site_admin.models import HeroContent, FeatureBlock, AboutUs, AboutEducenter
 from datetime import datetime, date
+from django.contrib.auth.views import LoginView
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
+
+@csrf_exempt  # Temporariamente para testes, remova depois que testar
+def ajax_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return JsonResponse({
+                'success': True,
+                'redirect_url': request.POST.get('next', '/')
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Usuário ou senha incorretos'
+            }, status=400)
+
+    return JsonResponse({
+        'error': 'Método não permitido'
+    }, status=405)
 
 csrf_protect
 @login_required
@@ -141,7 +168,32 @@ def index_view(request):
     return render(request, 'frontend/index.html', context)
 
 def about_view(request):
-    return render(request, "frontend/about.html")
+    """
+    View para a página Sobre Nós que exibe:
+    - Conteúdo do AboutUs (missão)
+    - Conteúdo do AboutEducenter
+    - Itens de características (FeatureItem)
+    """
+    # Obtém a instância única de AboutUs (ou None se não existir)
+    about_us = AboutUs.objects.first()
+
+    # Obtém a instância ativa de AboutEducenter com seus itens relacionados
+    about_educenter = AboutEducenter.objects.filter(is_active=True).first()
+
+    # Se about_educenter existe, os feature_items serão acessados via related_name
+    # Não precisamos de query adicional devido ao related_name='feature_items'
+
+    context = {
+        'about_us': about_us,
+        'about_educenter': about_educenter,
+        # Os feature_items serão acessados via about_educenter.feature_items.all() no template
+    }
+
+    return render(request, "frontend/sobre.html", context)
+
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+    redirect_authenticated_user = True
 
 def aluno_view(request):
     return render(request, "frontend/aluno.html")
@@ -234,7 +286,8 @@ def get_disciplinas_data(aluno: Aluno) -> Dict[str, Dict[str, Any]]:
 
     return disciplinas_data
 
-
+@csrf_protect
+@login_required
 def consulta_boletim(request):
     """View para consulta de boletim escolar por RA."""
     boletim = None
@@ -251,36 +304,73 @@ def consulta_boletim(request):
 
         # Busca o aluno
         try:
-            aluno = Aluno.objects.select_related('turma').get(ra=ra_aluno)
+            aluno = Aluno.objects.get(ra=ra_aluno)
+            turma = aluno.turmas.first()
+            print(f"Aluno encontrado: {aluno.nome}, Turma: {turma.nome if turma else 'Nenhuma'}")
         except Aluno.DoesNotExist:
             messages.error(request, 'Aluno não encontrado com o RA informado.')
             return render(request, 'frontend/aluno.html', {'boletim': None})
 
         # Disciplinas fixas que devem aparecer no boletim
-        DISCIPLINAS_BOLETIM = [
-            'Português', 'Matemática', 'História', 'Geografia',
-            'Ciências', 'Artes', 'Educação Física'
-        ]
+        # Disciplinas com correspondência flexível
+        DISCIPLINAS_BOLETIM = {
+            'Português': ['portug', 'língua portuguesa'],
+            'Matemática': ['matemát', 'matemat'],
+            'História': ['histó', 'histori'],
+            'Geografia': ['geograf'],
+            'Ciências': ['ciên', 'ciencia'],
+            'Artes': ['arte'],
+            'Educação Física': ['educa', 'físic', 'ed. fis']
+        }
+
+        for nome_exibicao, termos in DISCIPLINAS_BOLETIM.items():
+            # Cria uma query OR para todos os termos de busca
+            query = Q()
+            for termo in termos:
+                query |= Q(nome__icontains=termo)
+
+            disciplina = Disciplina.objects.filter(query).first()
+
+            if disciplina:
+                print(f"Disciplina encontrada: {disciplina.nome} (exibição: {nome_exibicao})")
+            else:
+                print(f"Nenhuma disciplina encontrada para: {nome_exibicao}")
 
         # Obtém os dados das disciplinas
         disciplinas_data = {}
+        # Busca por bimestres de forma mais flexível
+        termos_bimestres = ['1', '2', '3', '4']  # Números dos bimestres
+
+        query = Q()
+        for termo in termos_bimestres:
+            query |= Q(nome__icontains=termo) | Q(nome__icontains=f"{termo}º") | Q(nome__icontains=f"{termo}°")
+
+        bimestres = Bimestre.objects.filter(query).order_by('nome')
+
+        # Alternativa ainda mais abrangente (pega qualquer bimestre numerado)
         bimestres = Bimestre.objects.filter(
-            Q(nome="1º Bimestre") | Q(nome="2º Bimestre") |
-            Q(nome="3º Bimestre") | Q(nome="4º Bimestre")
+            Q(nome__iregex=r'(1|2|3|4)(º|°|o)?(\s)?bimestre') |
+            Q(nome__iregex=r'(primeiro|segundo|terceiro|quarto)(\s)?bimestre')
         ).order_by('nome')
+
+        print(f"Bimestres encontrados: {bimestres.count()}")
 
         for disciplina_nome in DISCIPLINAS_BOLETIM:
             try:
                 disciplina = Disciplina.objects.get(nome=disciplina_nome)
+                print(f"Processando disciplina: {disciplina.nome}")
                 bimestres_data = []
 
                 for bimestre in bimestres:
+                    print(f"Processando bimestre: {bimestre.nome}")
+
                     # Busca avaliação
                     avaliacao = Avaliacao.objects.filter(
                         aluno=aluno,
                         disciplina=disciplina,
                         bimestre=bimestre
                     ).first()
+                    print(f"Avaliação encontrada: {avaliacao.nota if avaliacao else 'Nenhuma'}")
 
                     # Calcula faltas
                     frequencias = Frequencia.objects.filter(
@@ -290,6 +380,7 @@ def consulta_boletim(request):
                         data__lte=bimestre.data_fim
                     )
                     total_faltas = frequencias.filter(status='ausente').count()
+                    print(f"Total de faltas: {total_faltas}")
 
                     # Calcula situação
                     situacao = None
@@ -307,7 +398,7 @@ def consulta_boletim(request):
                     'bimestres': bimestres_data
                 }
             except Disciplina.DoesNotExist:
-                # Se a disciplina não existir, cria com valores vazios
+                print(f"Disciplina não encontrada: {disciplina_nome}")
                 disciplinas_data[disciplina_nome] = {
                     'nome': disciplina_nome,
                     'bimestres': [{'nota': None, 'faltas': None, 'mireq': None} for _ in range(4)]
@@ -316,9 +407,10 @@ def consulta_boletim(request):
         # Prepara a estrutura do boletim
         boletim = {
             'aluno': aluno,
-            'turma': aluno.turma.nome if aluno.turma else '',
+            'turma': turma.nome if turma else '',
             'disciplinas': disciplinas_data
         }
+        print("Boletim gerado:", boletim)
 
     return render(request, 'frontend/aluno.html', {'boletim': boletim})
 
@@ -436,7 +528,7 @@ def turma_list(request):
 def add_alunos_turma(request, turma_id):
     try:
         turma = get_object_or_404(Turma, id=turma_id)
-        alunos = turma.alunos.all().order_by('nome')  # Ordena os alunos por nome
+        alunos = turma.alunos_como_aluno.all().order_by('nome')  # Ordena os alunos por nome
 
         if request.method == 'POST':
             ra = request.POST.get('ra')
@@ -447,11 +539,11 @@ def add_alunos_turma(request, turma_id):
 
             try:
                 aluno = Aluno.objects.get(ra=ra)
-                if aluno in turma.alunos.all():
+                if aluno in turma.alunos_como_aluno.all():
                     logger.warning(f"[add_alunos_turma] Aluno {aluno.nome} (RA: {ra}) já está na turma {turma_id}")
                     messages.warning(request, f'Aluno {aluno.nome} já está nesta turma.')
                 else:
-                    turma.alunos.add(aluno)
+                    turma.alunos_como_aluno.add(aluno)
                     logger.info(f"[add_alunos_turma] Aluno {aluno.nome} (RA: {ra}) adicionado à turma {turma_id}")
                     messages.success(request, f'Aluno {aluno.nome} adicionado com sucesso!')
             except Aluno.DoesNotExist:
@@ -479,7 +571,7 @@ def remove_aluno_turma(request, turma_id, aluno_id):
     aluno = get_object_or_404(Aluno, id=aluno_id)
 
     if request.method == 'POST':
-        turma.alunos.remove(aluno)
+        turma.alunos_como_aluno.remove(aluno)
         messages.success(request, f'Aluno {aluno.nome} removido com sucesso!')
         return redirect('add_alunos_turma', turma_id=turma.id)
 
