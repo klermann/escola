@@ -2,225 +2,227 @@
 {% load i18n admin_urls static admin_list %}
 
 {% block extrastyle %}
-{{ block.super }}
-<style>
-    /* Container principal */
-    .periodos-container {
-        padding: 20px 0;
-        width: 100%;
-    }
-    
-    /* Header com botão de adicionar */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    
-    .add-periodo-btn {
-        background-color: #447e9b;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border: none;
-        font-weight: 400;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        cursor: pointer;
-    }
-    
-    .add-periodo-btn:hover {
-        background-color: #447e9b;
-        color: white;
-    }
-    
-    .add-periodo-btn:before {
-        content: "+";
-        margin-right: 5px;
-        font-size: 1.1rem;
-    }
-    
-    /* Grid de cards */
-    .periodo-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        width: 100%;
-    }
-    
-    /* Card individual */
-    .periodo-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        height: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-    }
-    
-    .periodo-card:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transform: translateY(-3px);
-        border-color: #79aec8;
-    }
-    
-    /* Status indicator */
-    .status {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.85rem;
-    }
-    
-    .status span {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 5px;
-    }
-    
-    .status.active span {
-        background-color: #28a745;
-    }
-    
-    .status.inactive span {
-        background-color: #dc3545;
-    }
-    
-    /* Conteúdo do card */
-    .card-body {
-        padding: 20px;
-        flex: 1;
-    }
-    
-    .card-body h3 {
-        margin: 0 0 10px 0;
-        color: #447e9b;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    
-    .card-body p {
-        margin: 0 0 8px 0;
-        color: #666;
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-    
-    /* Botões de ação */
-    .action-buttons {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 20px;
-        border-top: 1px solid #f0f0f0;
-        background: #f9f9f9;
-    }
-    
-    .edit-btn, .calendar-btn {
-        background-color: #447e9b;
-        color: white;
-        border: none;
-        padding: 6px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        text-decoration: none;
-    }
-    
-    .edit-btn:hover, .calendar-btn:hover {
-        background-color: #3a6d85;
-    }
-    
-    /* Mensagem quando vazio */
-    .empty-message {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 30px;
-        color: #666;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px dashed #ddd;
-    }
-
-    /* Responsividade */
-    @media (max-width: 1024px) {
-        .periodo-cards {
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    {{ block.super }}
+    <style>
+        /* Container principal */
+        .periodos-container {
+            padding: 20px 0;
+            width: 100%;
         }
-    }
 
-    @media (max-width: 768px) {
-        .periodo-cards {
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 15px;
-        }
-        
+        /* Header com botão de adicionar */
         .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
-    }
 
-    @media (max-width: 480px) {
-        .periodo-cards {
-            grid-template-columns: 1fr;
+        .add-periodo-btn {
+            background-color: #447e9b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: none;
+            font-weight: 400;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
         }
-    }
-</style>
+
+        .add-periodo-btn:hover {
+            background-color: #447e9b;
+            color: white;
+        }
+
+        .add-periodo-btn:before {
+            content: "+";
+            margin-right: 5px;
+            font-size: 1.1rem;
+        }
+
+        /* Grid de cards */
+        .periodo-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* Card individual */
+        .periodo-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .periodo-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            border-color: #79aec8;
+        }
+
+        /* Status indicator */
+        .status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .status span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status.active span {
+            background-color: #28a745;
+        }
+
+        .status.inactive span {
+            background-color: #dc3545;
+        }
+
+        /* Conteúdo do card */
+        .card-body {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .card-body h3 {
+            margin: 0 0 10px 0;
+            color: #447e9b;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .card-body p {
+            margin: 0 0 8px 0;
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Botões de ação */
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-top: 1px solid #f0f0f0;
+            background: #f9f9f9;
+        }
+
+        .edit-btn, .calendar-btn {
+            background-color: #447e9b;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+
+        .edit-btn:hover, .calendar-btn:hover {
+            background-color: #3a6d85;
+        }
+
+        /* Mensagem quando vazio */
+        .empty-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ddd;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1024px) {
+            .periodo-cards {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .periodo-cards {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 15px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .periodo-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <div class="page-header">
-        <h1></h1>
-        <button class="add-periodo-btn" onclick="window.location.href='{% url 'admin:core_periodoletivo_add' %}'">
-            Adicionar Período Letivo
-        </button>
-    </div>
-    <div class="module" id="changelist">
-        <div class="periodos-container">
-            {% if cl.queryset %}
-                <div class="periodo-cards">
-                    {% for item in cl.queryset %}
-                    <div class="periodo-card">
-                        <div class="status {% if item.ativo %}active{% else %}inactive{% endif %}">
-                            <span></span>
-                            {% if item.ativo %}Ativo{% else %}Inativo{% endif %}
-                        </div>
-                        <div class="card-body">
-                            <h3>{{ item.nome }}</h3>
-                            <p><strong>Tipo:</strong> {{ item.tipo }}</p>
-                            <p><strong>Ano:</strong> {{ item.ano }}</p>
-                            <p><strong>Início:</strong> {{ item.data_inicio|date:"M. j, Y" }}</p>
-                            <p><strong>Fim:</strong> {{ item.data_fim|date:"M. j, Y" }}</p>
-                        </div>
-                        <div class="action-buttons">
-                          <button onclick="window.location.href='{% url 'admin:core_periodoletivo_change' item.id %}'" class="edit-btn">
-                              Editar
-                          </button>
-                          <button onclick="window.location.href='{% url 'admin:core_periodoletivo_calendario' item.id %}'" class="calendar-btn">
-                              Ver Calendário
-                          </button>
-                      </div>
+    <div id="content-main">
+        <div class="page-header">
+            <h1></h1>
+            <button class="add-periodo-btn" onclick="window.location.href='{% url 'admin:core_periodoletivo_add' %}'">
+                Adicionar Período Letivo
+            </button>
+        </div>
+        <div class="module" id="changelist">
+            <div class="periodos-container">
+                {% if cl.queryset %}
+                    <div class="periodo-cards">
+                        {% for item in cl.queryset %}
+                            <div class="periodo-card">
+                                <div class="status {% if item.ativo %}active{% else %}inactive{% endif %}">
+                                    <span></span>
+                                    {% if item.ativo %}Ativo{% else %}Inativo{% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <h3>{{ item.nome }}</h3>
+                                    <p><strong>Tipo:</strong> {{ item.tipo }}</p>
+                                    <p><strong>Ano:</strong> {{ item.ano }}</p>
+                                    <p><strong>Início:</strong> {{ item.data_inicio|date:"M. j, Y" }}</p>
+                                    <p><strong>Fim:</strong> {{ item.data_fim|date:"M. j, Y" }}</p>
+                                </div>
+                                <div class="action-buttons">
+                                    <button onclick="window.location.href='{% url 'admin:core_periodoletivo_change' item.id %}'"
+                                            class="edit-btn">
+                                        Editar
+                                    </button>
+                                    <button onclick="window.location.href='{% url 'admin:core_periodoletivo_calendario' item.id %}?ano={{ item.ano }}'"
+                                            class="calendar-btn">
+                                        Ver Calendário
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty-message">
-                    Nenhum período letivo cadastrado.
-                </div>
-            {% endif %}
+                {% else %}
+                    <div class="empty-message">
+                        Nenhum período letivo cadastrado.
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}

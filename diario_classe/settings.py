@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 ]
 # Configurações específicas do admin_interface
 ADMIN_INTERFACE_CONFIG = {
-    'theme': 'default',  # Pode ser 'default', 'dark', 'light', etc.
+    'theme': 'light',  # Pode ser 'default', 'dark', 'light', etc.
     'name': 'DIÁRIO DE CLASSE DIGITAL',  # Nome personalizado
     'logo': 'static/images/logo-escola.png',  # Caminho para seu logo (opcional)
     'default_theme': {
@@ -158,15 +158,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
-
-LANGUAGE_CODE = 'pt-br'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

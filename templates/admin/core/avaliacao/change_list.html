@@ -9,7 +9,7 @@
         padding: 20px 0;
         width: 100%;
     }
-    
+
     /* Grid de cards */
     .avaliacoes-grid {
         display: grid;
@@ -17,7 +17,7 @@
         gap: 20px;
         width: 100%;
     }
-    
+
     /* Card individual */
     .avaliacao-card {
         border: 1px solid #e0e0e0;
@@ -31,13 +31,13 @@
         height: 100%;
         box-sizing: border-box;
     }
-    
+
     .avaliacao-card:hover {
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         transform: translateY(-3px);
         border-color: #79aec8;
     }
-    
+
     /* Conteúdo do card */
     .avaliacao-card h3 {
         margin: 0 0 10px 0;
@@ -45,14 +45,14 @@
         font-size: 1.1rem;
         font-weight: 600;
     }
-    
+
     .avaliacao-card p {
         margin: 0 0 8px 0;
         color: #666;
         font-size: 0.9rem;
         line-height: 1.4;
     }
-    
+
     /* Mensagem quando vazio */
     .empty-message {
         grid-column: 1 / -1;
@@ -62,6 +62,20 @@
         background: #f8f9fa;
         border-radius: 8px;
         border: 1px dashed #ddd;
+    }
+
+    /* Seção por ano */
+    .year-section {
+        margin-bottom: 30px;
+    }
+
+    .year-header {
+        font-size: 1.3rem;
+        color: #333;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+        margin-bottom: 20px;
+        font-weight: 600;
     }
 
     /* Responsividade */
@@ -82,7 +96,7 @@
         .avaliacoes-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .avaliacao-card {
             padding: 15px;
         }
@@ -93,20 +107,28 @@
 {% block content %}
 <div id="content-main">
     <div class="module" id="changelist">
-        <h1>Avaliações</h1>
         <div class="avaliacoes-container">
-            <div class="avaliacoes-grid">
-                {% for turma in turmas %}
-                <a href="{% url 'admin:core_avaliacao_form' turma.id %}" class="avaliacao-card">
-                    <h3>{{ turma.nome }}</h3>
-                    <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
-                </a>
-                {% empty %}
+            {% regroup turmas|dictsortreversed:"ano" by ano as turmas_por_ano %}
+
+            {% if turmas_por_ano %}
+                {% for ano in turmas_por_ano %}
+                    <div class="year-section">
+                        <div class="year-header">Turmas de {{ ano.grouper }}</div>
+                        <div class="avaliacoes-grid">
+                            {% for turma in ano.list %}
+                            <a href="{% url 'admin:core_avaliacao_form' turma.id %}" class="avaliacao-card">
+                                <h3>{{ turma.nome }}</h3>
+                                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
                 <div class="empty-message">
                     Nenhuma turma cadastrada.
                 </div>
-                {% endfor %}
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>

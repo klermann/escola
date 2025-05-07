@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand as ConfigureThemeCommand
 
 # Configuração para funcionar como script independente
 try:
@@ -34,9 +35,25 @@ class Command(BaseCommand):
     help = 'Popula o banco de dados com dados de exemplo para o sistema escolar'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS('Iniciando a população do banco de dados...'))
-        populate_database(self.style)
-        self.stdout.write(self.style.SUCCESS('Banco de dados populado com sucesso!'))
+        try:
+            self.stdout.write(self.style.SUCCESS('Iniciando a população do banco de dados...'))
+
+            # Configuração do Django
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'diario_classe.settings')
+            django.setup()
+
+            # Funções de população
+            from core.management.commands.populate_db import populate_database
+
+            # Executa a população
+            with transaction.atomic():
+                populate_database(self.style)
+
+            self.stdout.write(self.style.SUCCESS('✅ Banco de dados populado com sucesso!'))
+
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'❌ Erro ao popular banco de dados: {str(e)}'))
+            raise e
 
 
 def generate_ra():
@@ -176,7 +193,7 @@ def create_example_users():
     """Cria usuários de exemplo para cada grupo"""
     users_data = [
         {
-            'username': 'aluno1',
+            'username': 'aluno',
             'password': 'aluno123',
             'email': 'aluno1@escola.com',
             'first_name': 'João',
@@ -184,7 +201,7 @@ def create_example_users():
             'groups': ['aluno']
         },
         {
-            'username': 'prof1',
+            'username': 'prof',
             'password': 'prof123',
             'email': 'prof1@escola.com',
             'first_name': 'Maria',
@@ -200,7 +217,7 @@ def create_example_users():
             'groups': ['diretor']
         },
         {
-            'username': 'diradm1',
+            'username': 'diradm',
             'password': 'diradm123',
             'email': 'diradm1@escola.com',
             'first_name': 'Ana',
@@ -683,6 +700,29 @@ def populate_database(style=None):
         populate_about_us()
         populate_feature_blocks()
         populate_hero_content()
+
+        # 16. Configura o tema do admin_interface
+        try:
+            from admin_interface.models import Theme
+            theme, created = Theme.objects.get_or_create(
+                name='Tema Padrão',
+                defaults={
+                    'active': True,
+                    'show_logo': False,
+                }
+            )
+            if not created:
+                theme.show_logo = False
+                theme.save()
+
+            if style:
+                style.SUCCESS('✅ Tema do Admin configurado com sucesso!')
+        except ImportError:
+            if style:
+                style.WARNING('⚠️ admin_interface não instalado, pulando configuração de tema')
+        except Exception as e:
+            if style:
+                style.ERROR(f'❌ Erro ao configurar tema: {str(e)}')
 
 
 if __name__ == "__main__":

@@ -151,17 +151,18 @@ class FrequenciaAdmin(admin.ModelAdmin):
     def _processar_frequencias(self, request, alunos, turma, data):
         success_count = 0
         error_messages = []
-
+        logger.error(f"Data recebida para processamento: ({date.today().year})")
+        today = date.today()
         # Valida a data antes de processar
         try:
             parsed_date = parse_date(data)
             if not parsed_date:
                 raise ValueError("Data inválida")
-            if parsed_date > date.today() + timedelta(days=30):  # Exemplo: não permite datas > 30 dias no futuro
-                raise ValueError("Data no futuro distante")
+            if parsed_date.year != today.year:
+                raise ValueError(f"Data deve ser do ano atual ({today.year})")
         except (ValueError, TypeError) as e:
             logger.error(f"Data inválida recebida para processamento: {data}. Erro: {str(e)}")
-            messages.error(request, f"Data inválida: {data}")
+            messages.error(request, f"Data deve ser do ano atual ({today.year})")
             return
 
         # Log para depuração
@@ -891,6 +892,8 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
         logger.debug(f"[calendario_view] Iniciando para periodo_id={periodo_id}")
 
         periodo = get_object_or_404(PeriodoLetivo, id=periodo_id)
+        # Armazenar o ano na sessão
+        request.session['ano_calendario'] = periodo.ano
         meses = [
             ('JANEIRO', 1), ('FEVEREIRO', 2), ('MARÇO', 3), ('ABRIL', 4),
             ('MAIO', 5), ('JUNHO', 6), ('JULHO', 7), ('AGOSTO', 8),

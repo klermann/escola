@@ -25,16 +25,16 @@
         transform: translateY(-2px);
     }
     
-    .turma-card h3 {
+    .turma-card h4 {
         margin-top: 0;
         color: #447e9b;
     }
-    
+
     .turma-card p {
         margin-bottom: 15px;
         color: #666;
     }
-    
+
     .turma-card .button {
         display: inline-block;
         padding: 8px 15px;
@@ -44,22 +44,34 @@
         border-radius: 4px;
         transition: background 0.2s;
     }
-    
+
     .turma-card .button:hover {
         background: #205067;
     }
-    
+
     .empty-message {
         grid-column: 1 / -1;
         text-align: center;
         padding: 20px;
         color: #666;
     }
-     /* Header */
-     .page-header {
+
+    .page-header {
         margin-bottom: 8px;
         color: #333333;
         font-size: 1.2em;
+    }
+
+    .year-section {
+        margin-bottom: 30px;
+    }
+
+    .year-header {
+        font-size: 1.4em;
+        color: #333;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+        margin-bottom: 20px;
     }
 </style>
 {% endblock %}
@@ -67,22 +79,31 @@
 {% block content %}
 <div id="content-main">
     <div class="module" id="changelist">
-        <div class="turma-cards">
-            {% for turma in turmas %}
-            <div class="turma-card">
-                <h4>{{ turma.nome }}</h4>
-                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
-                <button  type="button"  class="button add-alunos-btn" 
-                    onclick="window.location.href='{% url 'admin:frequencia_form' turma.id %}'">
-                    Registrar Frequência
-                </button>
-            </div>
-            {% empty %}
+        {% regroup turmas|dictsortreversed:"ano" by ano as turmas_por_ano %}
+
+        {% if turmas_por_ano %}
+            {% for ano in turmas_por_ano %}
+                <div class="year-section">
+                    <div class="year-header">Turmas de {{ ano.grouper }}</div>
+                    <div class="turma-cards">
+                        {% for turma in ano.list %}
+                        <div class="turma-card">
+                            <h4>{{ turma.nome }}</h4>
+                            <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                            <button type="button" class="button add-alunos-btn"
+                                onclick="window.location.href='{% url 'admin:frequencia_form' turma.id %}'">
+                                Registrar Frequência
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
             <div class="empty-message">
                 Nenhuma turma cadastrada.
             </div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

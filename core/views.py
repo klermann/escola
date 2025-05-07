@@ -419,10 +419,9 @@ def calendario_view(request):
     bimestres = Bimestre.objects.filter(ano_letivo=ano_letivo).order_by('nome')
     total_dias_letivos = bimestres.aggregate(total=Sum('dias_letivo'))['total'] or 0
 
-    # Assuming you already have the calendar data (calendario, dias_cabecalho, etc.)
-    calendario = {}  # Your calendar data logic here
-    dias_cabecalho = list(range(1, 32))  # Example: 1 to 31
-    dias_letivos_por_mes = {}  # Your logic to calculate days per month
+    calendario = {}
+    dias_cabecalho = list(range(1, 32))
+    dias_letivos_por_mes = {}
 
     context = {
         'bimestres': bimestres,
@@ -438,34 +437,53 @@ def calendario_view(request):
 @csrf_protect
 def atualizar_calendario(request):
     try:
-        logger.debug(f"[atualizar_calendario] Requisição recebida: {request.body}")
-        data = json.loads(request.body)
-        logger.debug(f"[atualizar_calendario] Dados parseados: {data}")
+        # Depuração inicial
+        logger.debug(f"[DEBUG] Corpo da requisição: {request.body}")
+        ano_calendario = request.session.get('ano_calendario')
+        if not ano_calendario:
+            return JsonResponse({'success': False, 'error': 'Ano não definido'}, status=400)
 
+        data = json.loads(request.body)
+        #ano_calendario = int(data.get('ano', date.today().year))
         changes = data.get('changes', [])
-        ano_calendario = data.get('ano', date.today().year)  # Permite receber o ano do frontend
+
+        # Log de depuração crítico
+        logger.debug(f"[DEBUG] Ano recebido: {ano_calendario} (Tipo: {type(ano_calendario)})")
+        logger.debug(
+            f"[DEBUG] Períodos existentes para {ano_calendario}: {PeriodoLetivo.objects.filter(ano=ano_calendario).values()}")
+        logger.debug(
+            f"[DEBUG] Período ativo para {ano_calendario}: {PeriodoLetivo.objects.filter(ano=ano_calendario, ativo=True).exists()}")
 
         if not changes:
-            logger.warning("[atualizar_calendario] Nenhuma alteração fornecida no payload.")
             return JsonResponse({'success': False, 'error': 'Nenhuma alteração fornecida.'}, status=400)
 
         with transaction.atomic():
+            # Verificação robusta do período letivo
             try:
                 periodo_letivo = PeriodoLetivo.objects.get(ano=ano_calendario, ativo=True)
-                logger.debug(f"[atualizar_calendario] Período letivo: {periodo_letivo}")
+                logger.debug(f"[DEBUG] Período encontrado: ID {periodo_letivo.id} - {periodo_letivo.nome}")
             except PeriodoLetivo.DoesNotExist:
-                logger.error(
-                    f"[atualizar_calendario] Nenhum período letivo ativo encontrado para o ano {ano_calendario}.")
-                return JsonResponse(
-                    {'success': False, 'error': f'Nenhum período letivo ativo encontrado para o ano {ano_calendario}.'},
-                    status=400)
-            except MultipleObjectsReturned:
-                logger.error(
-                    f"[atualizar_calendario] Múltiplos períodos letivos ativos encontrados para o ano {ano_calendario}.")
-                return JsonResponse({'success': False,
-                                     'error': f'Múltiplos períodos letivos ativos encontrados para o ano {ano_calendario}.'},
-                                    status=400)
+                logger.error(f"[ERROR] Período letivo ativo não encontrado para {ano_calendario}")
+                # Log de depuração crítico
+                logger.debug(f"[DEBUG] Ano recebido: {ano_calendario} (Tipo: {type(ano_calendario)})")
+                logger.debug(
+                    f"[DEBUG] Períodos existentes para {ano_calendario}: {PeriodoLetivo.objects.filter(ano=ano_calendario).values()}")
+                logger.debug(
+                    f"[DEBUG] Período ativo para {ano_calendario}: {PeriodoLetivo.objects.filter(ano=ano_calendario, ativo=True).exists()}")
 
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Período letivo ativo não encontrado para {ano_calendario}',
+                    'suggestion': 'Verifique se existe um período letivo ativo para este ano no admin'
+                }, status=400)
+            except MultipleObjectsReturned:
+                logger.error(f"[ERROR] Múltiplos períodos ativos para {ano_calendario}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Múltiplos períodos letivos ativos para {ano_calendario}'
+                }, status=400)
+
+            # Processar alterações
             mes_to_num = {
                 'JANEIRO': 1, 'FEVEREIRO': 2, 'MARÇO': 3, 'ABRIL': 4,
                 'MAIO': 5, 'JUNHO': 6, 'JULHO': 7, 'AGOSTO': 8,
@@ -476,45 +494,58 @@ def atualizar_calendario(request):
                 try:
                     mes = change['mes']
                     dia = int(change['dia'])
-                    novo_status = change['status']
+                    status = change['status']
 
                     data_atual = date(ano_calendario, mes_to_num[mes], dia)
 
                     DiaLetivo.objects.update_or_create(
                         periodo_letivo=periodo_letivo,
                         data=data_atual,
-                        defaults={'status': novo_status}
+                        defaults={'status': status}
                     )
-                except (KeyError, ValueError) as e:
-                    logger.error(f"[atualizar_calendario] Erro ao processar alteração {change}: {str(e)}")
-                    return JsonResponse({'success': False, 'error': f'Dados inválidos na alteração: {change}'},
-                                        status=400)
+                    logger.debug(f"[DEBUG] Dia atualizado: {data_atual} - {status}")
+                except Exception as e:
+                    logger.error(f"[ERROR] Erro ao processar alteração: {str(e)}")
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Dados inválidos na alteração',
+                        'detail': str(e)
+                    }, status=400)
 
-        # Recalcular totais
-        dias_letivos_por_mes = {}
-        for mes, num in mes_to_num.items():
-            count = DiaLetivo.objects.filter(
-                periodo_letivo=periodo_letivo,
-                data__year=ano_calendario,
-                data__month=num,
-                status='L'
-            ).count()
-            dias_letivos_por_mes[mes] = count
+            # Recalcular totais
+            dias_letivos_por_mes = {
+                mes: DiaLetivo.objects.filter(
+                    periodo_letivo=periodo_letivo,
+                    data__year=ano_calendario,
+                    data__month=num,
+                    status='L'
+                ).count()
+                for mes, num in mes_to_num.items()
+            }
 
-        total_dias_letivos = sum(dias_letivos_por_mes.values())
+            total_dias_letivos = sum(dias_letivos_por_mes.values())
 
-        return JsonResponse({
-            'success': True,
-            'dias_letivos_por_mes': dias_letivos_por_mes,
-            'total_dias_letivos': total_dias_letivos
-        })
+            return JsonResponse({
+                'success': True,
+                'ano_processado': ano_calendario,  # Adicionado para confirmação
+                'dias_letivos_por_mes': dias_letivos_por_mes,
+                'total_dias_letivos': total_dias_letivos
+            })
 
     except json.JSONDecodeError as e:
-        logger.error(f"[atualizar_calendario] Erro ao parsear JSON: {str(e)}")
-        return JsonResponse({'success': False, 'error': 'Formato JSON inválido'}, status=400)
+        logger.error(f"[ERROR] JSON inválido: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'JSON inválido',
+            'detail': str(e)
+        }, status=400)
     except Exception as e:
-        logger.error(f"[atualizar_calendario] Erro inesperado: {str(e)}", exc_info=True)
-        return JsonResponse({'success': False, 'error': 'Erro interno do servidor'}, status=500)
+        logger.error(f"[ERROR] Erro inesperado: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Erro interno',
+            'detail': str(e)
+        }, status=500)
 
 def turma_list(request):
     try:

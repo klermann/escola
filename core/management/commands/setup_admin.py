@@ -12,6 +12,7 @@ class Command(BaseCommand):
             name='Default',
             defaults={
                 'active': True,
+                'show_logo': False,  # Desativa o logo
                 'title': settings.ADMIN_INTERFACE_CONFIG.get('name', 'Admin'),
                 'logo': 'static/images/logo-escola.png',
                 'css_header_background_color': '#2A3F54',  # Azul escuro
