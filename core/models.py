@@ -25,7 +25,7 @@ from .constants import (
 #############################################################################
 #############################################################################
 #############################################################################
-############################################################################# 
+#############################################################################
 class DiretoriaEnsino(models.Model):
     id = models.AutoField(primary_key=True, verbose_name="ID")
     nome = models.CharField(
@@ -57,7 +57,7 @@ class DiretoriaEnsino(models.Model):
 #############################################################################
 #############################################################################
 #############################################################################
-############################################################################# 
+#############################################################################
 class Usuario(models.Model):
     id = models.AutoField(primary_key=True, verbose_name="ID")
     nome_usuario = models.CharField(###Lançado para cima o nome de usuário
@@ -76,7 +76,7 @@ class Usuario(models.Model):
         unique=True,
         validators=[CPF_REGEX],
         verbose_name="CPF",
-        default='000.000.000-00' 
+        default='000.000.000-00'
     )
     data_nascimento = models.DateField(verbose_name="Data de nascimento")
     sexo = models.CharField( ##### inclusão de sexo (M/F)
@@ -108,7 +108,7 @@ class Diretor(Usuario):
     Modelo que representa um Diretor escolar.
     Herda de Usuario e possui um relacionamento OneToOne com Escola.
     """
-    
+
     def __str__(self):
         return f"Diretor: {self.get_full_name()}" if hasattr(self, 'get_full_name') else f"Diretor: {self.nome}"
 
@@ -136,7 +136,7 @@ class Escola(models.Model):
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
     endereco = models.CharField(max_length=255, verbose_name="Endereço")
     diretoria_ensino = models.ForeignKey(
-        DiretoriaEnsino, 
+        DiretoriaEnsino,
         on_delete=models.PROTECT,
         verbose_name="Diretoria Regional de Ensino"
     )
@@ -147,7 +147,7 @@ class Escola(models.Model):
         blank=True,
         verbose_name="Diretor Responsável"
     )
-    
+
     def __str__(self):
         return self.nome
 
@@ -177,7 +177,7 @@ class Aluno(models.Model):
     nome = models.CharField(max_length=100)
     ativo = models.BooleanField(default=True)
     ra = models.CharField(
-        max_length=14, 
+        max_length=14,
         unique=True,
         validators=[validate_ra],
         help_text="Formato: 0000 + 9 dígitos + 1 dígito/X"
@@ -201,12 +201,12 @@ class Aluno(models.Model):
     def clean(self):
         if self.data_nascimento and self.data_nascimento.year < 2005:
             raise ValidationError({'data_nascimento': 'Data deve ser posterior a 2005'})
-        
+
         if self.ra and not re.match(r'^0000\d{9}[0-9X]$', self.ra):
             raise ValidationError({
                 'ra': 'RA deve estar no formato 0000 seguido de 9 dígitos e 1 dígito/X (ex: 0000110487524X)'
             })
-    
+
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
@@ -241,7 +241,7 @@ class Bimestre(models.Model):
     data_inicio = models.DateField(verbose_name='Data de Início', null=True, blank=True)  # Adicionado null=True
     data_fim = models.DateField(verbose_name='Data de Fim', null=True, blank=True)  # Adicionado null=True
     dias_letivo = models.IntegerField()
-    
+
     def __str__(self):
         return f"{self.nome} - {self.dias_letivo} dias | ano- {self.ano_letivo}"
 
@@ -352,7 +352,7 @@ class Avaliacao(models.Model):
         if not self.turma_id or not self.aluno.turmas.filter(id=self.turma_id).exists():
             raise ValidationError("O aluno não está matriculado nesta turma")
         super().save(*args, **kwargs)
-        
+
 class Frequencia(models.Model):
     PRESENCA_CHOICES = [
         ('presente', 'Presente'),
@@ -360,18 +360,18 @@ class Frequencia(models.Model):
         ('justificado', 'Justificado'),
         ('nao_letivo', 'Dia Não Letivo'),
     ]
-    
+
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
     data = models.DateField(verbose_name='Data')
     status = models.CharField(max_length=20, choices=PRESENCA_CHOICES)
     disciplina = models.ForeignKey(Disciplina, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     class Meta:
         unique_together = ('aluno', 'data', 'disciplina')  # Um aluno só pode ter um registro por dia por disciplina
         verbose_name = 'Frequência'
         verbose_name_plural = 'Frequências'
-    
+
     def __str__(self):
         return f"{self.aluno.nome} - {self.data} - {self.get_status_display()}"
 
@@ -381,7 +381,7 @@ class Frequencia(models.Model):
             raise ValidationError("O aluno não está matriculado nesta turma")
 
         super().save(*args, **kwargs)
-        
+
     def __str__(self):
         return f"{self.aluno.nome} - {self.data} - {self.get_status_display()}"
 
@@ -392,7 +392,7 @@ class PeriodoLetivo(models.Model):
         ('TRIMESTRAL', 'Trimestral'),
         ('BIMESTRAL', 'Bimestral'),
     ]
-    
+
     nome = models.CharField(max_length=100, verbose_name="Nome")
     tipo = models.CharField(max_length=10, choices=TIPO_PERIODO, verbose_name="Tipo")
     ano = models.IntegerField(
@@ -405,10 +405,10 @@ class PeriodoLetivo(models.Model):
     data_inicio = models.DateField(verbose_name="Data de Início")
     data_fim = models.DateField(verbose_name="Data de Fim")
     ativo = models.BooleanField(default=False, verbose_name="Ativo")
-    
+
     class Meta:
         verbose_name = 'Período Letivo'
-        verbose_name_plural = 'Períodos Letivos'  
+        verbose_name_plural = 'Períodos Letivos'
         ordering = ['-ano', 'data_inicio']
         indexes = [
             models.Index(fields=['tipo', 'ano', 'ativo']),
@@ -418,10 +418,10 @@ class PeriodoLetivo(models.Model):
             # Garante que o campo 'ano' seja único
             models.UniqueConstraint(fields=['ano'], name='unique_periodo_letivo_por_ano')
         ]
-    
+
     def __str__(self):
         return f"{self.nome} ({self.ano})"
-    
+
     def clean(self):
         # Validar que a data de fim não seja anterior à data de início
         if self.data_fim < self.data_inicio:
@@ -447,13 +447,13 @@ class PeriodoLetivo(models.Model):
     def save(self, *args, **kwargs):
         # Executar validações do método clean antes de salvar
         self.clean()
-        
+
         # Garantir que apenas um PeriodoLetivo esteja ativo
         if self.ativo:
             PeriodoLetivo.objects.filter(ativo=True).exclude(id=self.id).update(ativo=False)
-        
+
         super().save(*args, **kwargs)
-            
+
 class DiaLetivo(models.Model):
     STATUS_CHOICES = [
         ('L', 'Dia Letivo'),
@@ -479,7 +479,7 @@ class DiaLetivo(models.Model):
 
     def __str__(self):
         return f"{self.data.strftime('%d/%m/%Y')} - {self.get_status_display()}"
-    
+
 
 class Professor(models.Model):
     # Opções para carga horária
@@ -535,8 +535,8 @@ class Aviso(models.Model):
     mensagem = models.TextField()
     data_publicacao = models.DateTimeField(auto_now_add=True)
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    
+
 class Boletim(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
     # ... outros campos
-    
+
