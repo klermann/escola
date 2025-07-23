@@ -96,14 +96,23 @@ WSGI_APPLICATION = 'diario_classe.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+#DATABASES = {
+#   'default': {
+#    'USER': 'root',
+#        'PASSWORD': 'root',
+#       'HOST': 'localhost',  # ou o endereço do seu servidor MySQL
+#        'PORT': '3306',
+#    }
+#}
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'classe_digital_db',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': 'localhost',  # ou o endereço do seu servidor MySQL
-        'PORT': '3306',
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "classe_digital_db",
+        "USER": "classe_user",
+        "PASSWORD": "@vuc15197575K",
+        "HOST": "127.0.0.1",
+        "PORT": "3306",
     }
 }
 
