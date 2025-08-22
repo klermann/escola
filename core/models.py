@@ -10,6 +10,27 @@ from django.utils import timezone
 import re
 from django import forms
 
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
+from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+from django.db import models
+from django.contrib import admin
+from django import forms
+
+# --- Validadores auxiliares (reaproveite os seus, se já existirem) ---
+CEP_REGEX = RegexValidator(
+    regex=r'^\d{5}-?\d{3}$',
+    message="CEP deve estar no formato 99999-999 ou 99999999."
+)
+UF_CHOICES = [
+    ('AC','AC'),('AL','AL'),('AP','AP'),('AM','AM'),('BA','BA'),('CE','CE'),('DF','DF'),
+    ('ES','ES'),('GO','GO'),('MA','MA'),('MT','MT'),('MS','MS'),('MG','MG'),('PA','PA'),
+    ('PB','PB'),('PR','PR'),('PE','PE'),('PI','PI'),('RJ','RJ'),('RN','RN'),('RS','RS'),
+    ('RO','RO'),('RR','RR'),('SC','SC'),('SP','SP'),('SE','SE'),('TO','TO'),
+]
+EMAIL_OPCIONAL_HELP = "Preencha apenas se desejar registrar o e-mail."
+
+
 # Importações locais (relativas)
 from .constants import (
     MAX_LENGTH_NOME,
@@ -21,6 +42,146 @@ from .constants import (
     MAX_LENGTH_CPF,
     CPF_REGEX
 )
+
+# ============================================
+# DADOS PESSOAIS (complemento do Aluno)
+# ============================================
+class AlunoPessoal(models.Model):
+    SEXO_CHOICES = [('M','Masculino'), ('F','Feminino')]
+    RACA_COR_CHOICES = [
+        ('branca','Branca'), ('preta','Preta'), ('parda','Parda'),
+        ('amarela','Amarela'), ('indigena','Indígena'), ('nao_informado','Prefiro não informar'),
+    ]
+
+    aluno = models.OneToOneField('Aluno', on_delete=models.CASCADE, related_name='pessoal')
+
+    nome_social = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nome social (se houver)")
+    sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, blank=True, null=True)
+    raca_cor = models.CharField(max_length=20, choices=RACA_COR_CHOICES, blank=True, null=True, verbose_name="Raça/Cor (autodeclarada)")
+    nacionalidade = models.CharField(max_length=60, blank=True, null=True)
+    naturalidade_cidade = models.CharField(max_length=80, blank=True, null=True)
+    naturalidade_uf = models.CharField(max_length=2, choices=UF_CHOICES, blank=True, null=True)
+    cpf = models.CharField(
+        max_length=14, blank=True, null=True, validators=[CPF_REGEX],
+        verbose_name="Número do CPF"
+    )
+    rg_numero = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número do RG")
+    rg_orgao_emissor = models.CharField(max_length=20, blank=True, null=True, verbose_name="Órgão emissor do RG")
+    certidao_nascimento = models.TextField(blank=True, null=True, help_text="Número, livro, folha, cartório, etc.")
+
+    class Meta:
+        verbose_name = "Dados Pessoais"
+        verbose_name_plural = "Dados Pessoais"
+
+    def __str__(self):
+        return f"Pessoais de {self.aluno.nome}"
+
+# ============================================
+# RESPONSÁVEIS
+# ============================================
+class AlunoResponsaveis(models.Model):
+    aluno = models.OneToOneField('Aluno', on_delete=models.CASCADE, related_name='responsaveis')
+
+    mae_nome = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nome completo da mãe")
+    pai_nome = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nome completo do pai")
+    responsavel_legal_nome = models.CharField(max_length=100, blank=True, null=True)
+    telefone_principal = models.CharField(max_length=20, blank=True, null=True, validators=[TELEFONE_REGEX])
+    telefone_reserva = models.CharField(max_length=20, blank=True, null=True, validators=[TELEFONE_REGEX])
+    email_responsavel = models.EmailField(blank=True, null=True, help_text=EMAIL_OPCIONAL_HELP)
+    guarda_judicial = models.BooleanField(default=False, verbose_name="Guarda judicial?")
+
+    class Meta:
+        verbose_name = "Responsáveis"
+        verbose_name_plural = "Responsáveis"
+
+    def __str__(self):
+        return f"Responsáveis de {self.aluno.nome}"
+
+# ============================================
+# CONTATOS / ENDEREÇO
+# ============================================
+class AlunoContato(models.Model):
+    aluno = models.OneToOneField('Aluno', on_delete=models.CASCADE, related_name='contato')
+
+    logradouro = models.CharField(max_length=150, blank=True, null=True)
+    numero = models.CharField(max_length=20, blank=True, null=True)
+    complemento = models.CharField(max_length=60, blank=True, null=True)
+    bairro = models.CharField(max_length=60, blank=True, null=True)
+    cidade = models.CharField(max_length=80, blank=True, null=True)
+    uf = models.CharField(max_length=2, choices=UF_CHOICES, blank=True, null=True)
+    cep = models.CharField(max_length=9, blank=True, null=True, validators=[CEP_REGEX])
+
+    telefone_residencial = models.CharField(max_length=20, blank=True, null=True, validators=[TELEFONE_REGEX])
+    celular_aluno = models.CharField(max_length=20, blank=True, null=True, validators=[TELEFONE_REGEX])
+    email_aluno = models.EmailField(blank=True, null=True, help_text=EMAIL_OPCIONAL_HELP)
+
+    class Meta:
+        verbose_name = "Contato"
+        verbose_name_plural = "Contatos"
+
+    def __str__(self):
+        return f"Contato de {self.aluno.nome}"
+
+# ============================================
+# DADOS ESCOLARES
+# ============================================
+class AlunoEscolar(models.Model):
+    TURNO_CHOICES = [('manhã', 'Manhã'), ('tarde','Tarde'), ('noite','Noite'), ('integral','Integral')]
+    ETAPA_CHOICES = [
+        ('EI','Educação Infantil'),
+        ('EF','Ensino Fundamental'),
+        ('EM','Ensino Médio'),
+    ]
+    SITUACAO_CHOICES = [
+        ('ativa','Ativa'), ('transferido','Transferido'), ('trancado','Trancado'),
+        ('egresso','Egresso'), ('cancelado','Cancelado'),
+    ]
+
+    aluno = models.OneToOneField('Aluno', on_delete=models.CASCADE, related_name='escolar')
+
+    numero_matricula = models.CharField(max_length=30, unique=True, verbose_name="Número de matrícula")
+    ano_serie_atual = models.CharField(max_length=20, verbose_name="Ano/Série atual")
+    turma_atual = models.ForeignKey('Turma', on_delete=models.SET_NULL, null=True, blank=True, related_name='alunos_atual')
+    turno = models.CharField(max_length=10, choices=TURNO_CHOICES, blank=True, null=True)
+    unidade_escolar = models.ForeignKey('Escola', on_delete=models.SET_NULL, null=True, blank=True)
+    etapa_ensino = models.CharField(max_length=2, choices=ETAPA_CHOICES, blank=True, null=True)
+
+    historico_escolar = models.TextField(blank=True, null=True, help_text="Escolas anteriores, anos cursados, aprovação/reprovação.")
+    situacao_matricula = models.CharField(max_length=15, choices=SITUACAO_CHOICES, default='ativa')
+    data_ingresso = models.DateField(blank=True, null=True)
+    data_saida = models.DateField(blank=True, null=True)
+    numero_chamada = models.PositiveIntegerField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Dados Escolares"
+        verbose_name_plural = "Dados Escolares"
+
+    def __str__(self):
+        return f"Escolares de {self.aluno.nome}"
+
+# ============================================
+# DADOS COMPLEMENTARES
+# ============================================
+class AlunoComplementar(models.Model):
+    aluno = models.OneToOneField('Aluno', on_delete=models.CASCADE, related_name='complementar')
+
+    programa_bolsa_familia = models.BooleanField(default=False, verbose_name="Participa do Bolsa Família?")
+    programa_peti = models.BooleanField(default=False, verbose_name="Participa do PETI?")
+    acesso_internet_casa = models.BooleanField(default=True, verbose_name="Tem acesso à internet em casa?")
+    dispositivo_para_estudos = models.CharField(
+        max_length=40, blank=True, null=True,
+        help_text="Computador, celular, tablet, etc."
+    )
+    transporte_escolar = models.BooleanField(default=False, verbose_name="Usa transporte escolar?")
+    religiao = models.CharField(max_length=60, blank=True, null=True, verbose_name="Religião (opcional)")
+    autoriza_uso_imagem = models.BooleanField(default=False, verbose_name="Autoriza uso de imagem?")
+
+    class Meta:
+        verbose_name = "Dados Complementares"
+        verbose_name_plural = "Dados Complementares"
+
+    def __str__(self):
+        return f"Complementares de {self.aluno.nome}"
 
 #############################################################################
 #############################################################################
@@ -51,8 +212,8 @@ class DiretoriaEnsino(models.Model):
         return self.nome
 
     class Meta:
-        verbose_name = "Diretoria de Ensino"
-        verbose_name_plural = "Diretorias de Ensino"
+        verbose_name = "Dept. de Educação"
+        verbose_name_plural = "Dept. de Educação"
 
 #############################################################################
 #############################################################################

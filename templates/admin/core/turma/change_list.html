@@ -1,5 +1,5 @@
 {% extends "admin/change_list.html" %}
-{% load static %}
+{% load static i18n admin_urls admin_list %}
 
 {% block extrastyle %}
 {{ block.super }}
@@ -236,73 +236,172 @@
         .turma-card {
             padding: 0; /* Padding agora é gerenciado por .card-body */
         }
-    }
+    }/* Adicione ao seu bloco extrastyle */
+#changelist-filter {
+    background: #f5f9fc;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+#changelist-filter h2 {
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #447e9b;
+    font-size: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+#changelist-filter ul {
+    padding-left: 0;
+    margin-left: 0;
+}
+
+#changelist-filter li {
+    list-style-type: none;
+    margin-bottom: 8px;
+}
+
+#changelist-filter a {
+    color: #447e9b;
+    text-decoration: none;
+}
+
+#changelist-filter a:hover {
+    color: #036;
+}
+
+#changelist-filter .selected a {
+    color: #5b80b2;
+    font-weight: bold;
+}/* Adicione ao seu bloco extrastyle */
+#changelist-filter {
+    background: #f5f9fc;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    float: left;
+    width: 220px;
+    margin-right: 20px;
+}
+
+#changelist-filter h2 {
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #447e9b;
+    font-size: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+#changelist-filter ul {
+    padding-left: 0;
+    margin-left: 0;
+}
+
+#changelist-filter li {
+    list-style-type: none;
+    margin-bottom: 8px;
+}
+
+#changelist-filter a {
+    color: #447e9b;
+    text-decoration: none;
+}
+
+#changelist-filter a:hover {
+    color: #036;
+}
+
+#changelist-filter .selected a {
+    color: #5b80b2;
+    font-weight: bold;
+}
+
+/* Ajuste o layout principal para acomodar os filtros */
+#content-main {
+    overflow: hidden;
+}
+
+.turma-cards-container {
+    overflow: hidden;
+}
 </style>
 {% endblock %}
-
 {% block content %}
 <div id="content-main">
-    <div class="page-header">
-        <h1></h1>
-        <button class="add-turma-btn" onclick="window.location.href='{% url 'admin:core_turma_add' %}'">
-            Adicionar Turma
-        </button>
+  <div class="page-header">
+    <h1></h1>
+    <button class="add-turma-btn" onclick="window.location.href='{% url 'admin:core_turma_add' %}'">
+      Adicionar Turma
+    </button>
+  </div>
+
+  <div class="module" id="changelist">
+{% block filters %}
+  {% if cl.has_filters %}
+    <div id="changelist-filter">
+      <h2>{% trans 'Filter' %}</h2>
+      {% for spec in cl.filter_specs %}
+        {% admin_list_filter cl spec %}
+      {% endfor %}
     </div>
-    <div class="module" id="changelist">
-        <div class="turma-cards-container">
-            {% regroup cl.queryset by ano as turmas_por_ano %}
+  {% endif %}
+{% endblock %}
 
-            {% if turmas_por_ano %}
-                {% for ano_group in turmas_por_ano %}
-                <div class="ano-section">
-                    <div class="ano-header">
-                        <span class="ano-title">Turmas de {{ ano_group.grouper }}</span>
-                        <span class="turma-count">{{ ano_group.list|length }} turma{{ ano_group.list|length|pluralize }}</span>
-                    </div>
-
-                    <div class="turma-cards">
-                        {% for turma in ano_group.list %}
-                        <div class="turma-card">
-                            <div class="card-header"><button class="add-alunos-btn" onclick="window.location.href='{% url 'admin:core_turma_alunos' turma.id %}'">
-                                Inserir alunos
-                            </button>
-                            <div class="card-actions">
-                                      <div class="edit-delete-container">
-                                        <button class="edit-btn" title="Editar" onclick="window.location.href='{% url 'admin:core_turma_change' turma.id %}'">
-                                            <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar" class="action-icon">
-                                        </button>
-                                        <button class="delete-btn" title="Excluir" onclick="if(confirm('Tem certeza que deseja excluir a turma {{ turma.nome }}?')) window.location.href='{% url 'admin:core_turma_delete' turma.id %}'">
-                                            <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir" class="action-icon">
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <h3>{{ turma.nome }}</h3>
-                                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
-                                {% if turma.horario %}
-                                <div class="meta">
-                                    <span>Horário: {{ turma.horario }}</span>
-                                </div>
-                                {% endif %}
+    <div class="turma-cards-container">
+      {% regroup cl.result_list by ano as turmas_por_ano %}
+      {% if turmas_por_ano %}
+          {% for ano_group in turmas_por_ano %}
+          <div class="ano-section">
+              <div class="ano-header">
+                  <span class="ano-title">Turmas de {{ ano_group.grouper }}</span>
+                  <span class="turma-count">{{ ano_group.list|length }} turma{{ ano_group.list|length|pluralize }}</span>
+              </div>
+              <div class="turma-cards">
+                  {% for turma in ano_group.list %}
+                  <div class="turma-card">
+                      <div class="card-header">
+                        <button class="add-alunos-btn" onclick="window.location.href='{% url 'admin:core_turma_alunos' turma.id %}'">
+                            Inserir alunos
+                        </button>
+                        <div class="card-actions">
+                            <div class="edit-delete-container">
+                              <button class="edit-btn" title="Editar" onclick="window.location.href='{% url 'admin:core_turma_change' turma.id %}'">
+                                  <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar" class="action-icon">
+                              </button>
+                              <button class="delete-btn" title="Excluir" onclick="if(confirm('Tem certeza que deseja excluir a turma {{ turma.nome }}?')) window.location.href='{% url 'admin:core_turma_delete' turma.id %}'">
+                                  <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir" class="action-icon">
+                              </button>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-message">
-                    Nenhuma turma cadastrada.
-                </div>
-            {% endif %}
-        </div>
+                      </div>
+                      <div class="card-body">
+                          <h3>{{ turma.nome }}</h3>
+                          <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                          {% if turma.horario %}
+                          <div class="meta">
+                              <span>Horário: {{ turma.horario }}</span>
+                          </div>
+                          {% endif %}
+                      </div>
+                  </div>
+                  {% endfor %}
+              </div>
+          </div>
+          {% endfor %}
+      {% else %}
+          <div class="empty-message">
+              Nenhuma turma cadastrada.
+          </div>
+      {% endif %}
     </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block extrajs %}
-{{ block.super }}
 <script>
     // Função para atualizar o contador de seleção
     function updateSelectionCounter() {

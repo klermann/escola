@@ -1,0 +1,1321 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block object-tools %}
+    {% if user.is_superuser %}
+        <div class="object-tools">
+            {% block object-tools-items %}
+                {{ block.super }}
+            {% endblock %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block content_title %}
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1><i class="fas fa-city"></i> {{ title }}</h1>
+            <p class="subtitle">Visão geral do município</p>
+        </div>
+
+        <div class="header-actions">
+            {% if user.is_superuser %}
+                <a href="{% url 'admin:core_diretoriaensino_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Novo Departamento
+                </a>
+            {% endif %}
+
+            <form id="filtros-dashboard" class="filter-form inline-filters">
+                <div class="filter-group">
+                    <label for="periodo">Período:</label>
+                    <select id="periodo" class="form-control">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30" selected>Últimos 30 dias</option>
+                        <option value="90">Últimos 3 meses</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+
+                <div class="filter-group date-filters">
+                    <label for="data_ini"><i class="far fa-calendar-alt"></i> Data Inicial</label>
+                    <input type="date" id="data_ini" name="data_ini" class="form-control"/>
+                </div>
+
+                <div class="filter-group date-filters">
+                    <label for="data_fim"><i class="far fa-calendar-alt"></i> Data Final</label>
+                    <input type="date" id="data_fim" name="data_fim" class="form-control"/>
+                </div>
+
+                <div class="filter-group">
+                    <label for="escola">Escola:</label>
+                    <select id="escola" class="form-control">
+                        <option value="all">Todas as Escolas</option>
+                        {% for escola in escolas %}
+                            <option value="{{ escola.id }}">{{ escola.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-filter">
+                    <i class="fas fa-filter"></i> Aplicar
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block result_list %}
+    <div class="modern-dashboard">
+        <div class="quick-stats">
+            <div class="stat-card">
+                <div class="stat-icon school">
+                    <i class="fas fa-school"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Escolas</h3>
+                    <span class="stat-value">{{ total_escolas }}</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon student">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Alunos</h3>
+                    <span class="stat-value">{{ total_alunos }}</span>
+                    <div class="stat-details">
+                        <span class="present">✓ {{ alunos_presentes }} presentes</span>
+                        {% comment %}<span class="absent">✗ {{ alunos_ausentes }} ausentes</span>{% endcomment %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon teacher">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Professores</h3>
+                    <span class="stat-value">{{ total_professores }}</span>
+                    <div class="stat-details">
+                        <span class="with-class">✓ {{ professores_com_chamada }} com chamada</span>
+                        {% comment %}<span class="without-class">✗ {{ professores_sem_chamada }} sem chamada</span>{% endcomment %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon department">
+                    <i class="fas fa-university"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Departamentos</h3>
+                    <span class="stat-value">{{ departamentos|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout Principal em 3 Colunas -->
+        <div class="dashboard-layout">
+            <!-- Coluna 1 - Departamentos -->
+            <div class="departments-grid">
+                {% for dep in departamentos %}
+                    <div class="department-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            <h3>{{ dep.nome }}</h3>
+                            <div class="card-actions">
+                                <a href="{% url 'admin:core_diretoriaensino_change' dep.id %}" class="btn-icon edit"
+                                   title="Editar">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <a href="{% url 'admin:core_diretoriaensino_delete' dep.id %}" class="btn-icon delete"
+                                   title="Excluir">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-id-card"></i> ID:</span>
+                                <span class="info-value">{{ dep.id }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-phone"></i> Telefone:</span>
+                                <span class="info-value">{{ dep.telefone|default:"-" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-map-marker-alt"></i> Endereço:</span>
+                                <span class="info-value">{{ dep.endereco|truncatechars:30|default:"-" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-university"></i>
+                        <p>Nenhum departamento cadastrado</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Coluna 2 - Gráficos Principais -->
+            <div class="column main-charts-column">
+                <div class="section-card">
+                    <div class="chart-container large">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-bar"></i> Alunos por Escola</h3>
+                            <div class="chart-actions">
+                                <button class="btn-chart-action active" data-type="bar">
+                                    <i class="fas fa-chart-bar"></i>
+                                </button>
+                                <button class="btn-chart-action" data-type="line">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="alunosChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="chart-container large">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-pie"></i> Presença x Ausência</h3>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="presencaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 3 - Detalhes -->
+            <div class="column details-column">
+                <div class="section-card">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-line"></i> Professores com Chamada</h3>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="professoresChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="details-container">
+                        <div class="details-header">
+                            <h3><i class="fas fa-info-circle"></i> Detalhes do Período</h3>
+                        </div>
+                        <div id="dashboard-detalhado" class="details-grid">
+                            <!-- Conteúdo será preenchido via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="info-cards">
+                        <div class="info-card highlight attendance">
+                            <div class="card-icon">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Presença</h3>
+                                <div class="card-value" id="total-presentes">{{ alunos_presentes }}</div>
+                                <div class="card-trend positive">
+                                    <i class="fas fa-arrow-up"></i> 5% vs período anterior
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card highlight absence">
+                            <div class="card-icon">
+                                <i class="fas fa-user-times"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Ausência</h3>
+                                <div class="card-value" id="total-ausentes">{{ alunos_ausentes }}</div>
+                                <div class="card-trend negative">
+                                    <i class="fas fa-arrow-down"></i> 2% vs período anterior
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bibliotecas -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <!-- JavaScript -->
+    <script>
+        // === Plugins globais ===
+        Chart.register(ChartDataLabels);
+
+        // ---- Utils ----
+        function formatDateLocal(d) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {boxWidth: 12, padding: 20, font: {size: 12}}
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.85)',
+                    titleFont: {size: 14},
+                    bodyFont: {size: 12},
+                    padding: 12,
+                    cornerRadius: 8
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: {weight: 'bold'},
+                    formatter: (value, ctx) => ctx.chart?.data?.labels?.[ctx.dataIndex] ?? ''
+                }
+            }
+        };
+
+        // ---- Estado global dos gráficos ----
+        const charts = {}; // {canvasId: ChartInstance}
+        let alunosChartType = 'bar';
+        let alunosChartDataCache = null; // {labels:[], datasets:[...]} depois do fetch
+
+        function destroyChart(id) {
+            const canvas = document.getElementById(id);
+            if (canvas && canvas.chart) {
+                canvas.chart.destroy();
+                canvas.chart = null;
+            }
+            if (charts[id]) {
+                charts[id].destroy();
+                delete charts[id];
+            }
+        }
+
+        function renderChart(elementId, type, data, options) {
+            const canvas = document.getElementById(elementId);
+            if (!canvas) return;
+
+            // destruir anterior (seguro)
+            destroyChart(elementId);
+
+            const instance = new Chart(canvas, {
+                type,
+                data,
+                options,
+                plugins: [ChartDataLabels],
+            });
+
+            canvas.chart = instance;
+            charts[elementId] = instance;
+        }
+
+        function updateDetails(data) {
+            const container = document.getElementById('dashboard-detalhado');
+            if (!container) return;
+
+            const profCom = data.professores_com_chamada ?? [];
+            const profSem = data.professores_sem_chamada ?? [];
+            const topPres = data.top_escolas_presenca ?? [];
+            const topAus = data.top_escolas_ausencia ?? [];
+
+            container.innerHTML = `
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <h4>Professores com Chamada</h4>
+          <span class="badge">${profCom.length}</span>
+        </div>
+        <ul class="detail-list">${profCom.map(p => `<li>${p.nome}</li>`).join('')}</ul>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="fas fa-user-times"></i>
+          <h4>Professores sem Chamada</h4>
+          <span class="badge">${profSem.length}</span>
+        </div>
+        <ul class="detail-list">${profSem.map(p => `<li>${p.nome}</li>`).join('')}</ul>
+      </div>
+
+      ${topPres.length ? `
+        <div class="detail-card highlight">
+          <div class="detail-header">
+            <i class="fas fa-school"></i>
+            <h4>Escolas com maior presença</h4>
+          </div>
+          <ul class="detail-list">
+            ${topPres.map(e => `<li>${e.nome} (${e.presenca}%)</li>`).join('')}
+          </ul>
+        </div>` : ''}
+
+      ${topAus.length ? `
+        <div class="detail-card highlight">
+          <div class="detail-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>Escolas com maior ausência</h4>
+          </div>
+          <ul class="detail-list">
+            ${topAus.map(e => `<li>${e.nome} (${e.ausencia}%)</li>`).join('')}
+          </ul>
+        </div>` : ''}
+    `;
+        }
+
+        function showError(message) {
+            const container = document.getElementById('dashboard-detalhado');
+            if (container) {
+                container.innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>${message}</p>
+        </div>
+      `;
+            }
+        }
+
+        async function safeFetch(url) {
+            const resp = await fetch(url);
+            if (!resp.ok) {
+                const txt = await resp.text().catch(() => '');
+                throw new Error(`HTTP ${resp.status} – ${txt || 'Falha na requisição'}`);
+            }
+            return resp.json();
+        }
+
+        async function renderDashboard() {
+            try {
+                const periodo = document.getElementById('periodo').value;
+                const escolaSel = document.getElementById('escola').value;
+
+                let dataIni, dataFim;
+                if (periodo === 'custom') {
+                    dataIni = document.getElementById('data_ini').value;
+                    dataFim = document.getElementById('data_fim').value;
+                    if (!dataIni || !dataFim) {
+                        showError('Selecione a data inicial e final.');
+                        return;
+                    }
+                } else {
+                    const today = new Date();
+                    const startDate = new Date();
+                    startDate.setDate(today.getDate() - parseInt(periodo, 10));
+                    dataIni = formatDateLocal(startDate);
+                    dataFim = formatDateLocal(today);
+                    document.getElementById('data_ini').value = dataIni;
+                    document.getElementById('data_fim').value = dataFim;
+                }
+
+                const paramsObj = {data_ini: dataIni, data_fim: dataFim};
+                if (escolaSel && escolaSel !== 'all') paramsObj.escola_id = escolaSel;
+                const qs = new URLSearchParams(paramsObj).toString();
+
+                const [alunosData, detalhesData] = await Promise.all([
+                    safeFetch("{% url 'admin:core_diretoriaensino_schools_chart' %}?" + qs),
+                    safeFetch("{% url 'admin:core_diretoriaensino_dashboard_detalhado' %}?" + qs)
+                ]);
+
+                // Cards resumidos (fallback pra 0)
+                document.getElementById('total-presentes').textContent = detalhesData.total_presente ?? 0;
+                document.getElementById('total-ausentes').textContent = detalhesData.total_ausente ?? 0;
+
+                // ----- Gráfico Alunos/Presenças por Escola -----
+                // Prepara datasets (usa 2 séries se existir a de presenças)
+                const labels = alunosData.labels ?? [];
+                const dsAlunos = alunosData.datasets?.[0]?.data ?? alunosData.data ?? [];
+                const dsPresencas = alunosData.datasets?.[1]?.data ?? null;
+
+                alunosChartDataCache = {
+                    labels,
+                    datasets: [
+                        {
+                            label: alunosData.datasets?.[0]?.label ?? 'Alunos por Escola',
+                            data: dsAlunos,
+                            backgroundColor: '#4361ee',
+                            borderColor: '#3f37c9',
+                            borderWidth: 1
+                        },
+                        ...(dsPresencas ? [{
+                            label: alunosData.datasets?.[1]?.label ?? 'Presenças (aluno-dia)',
+                            data: dsPresencas,
+                            backgroundColor: '#4cc9f0',
+                            borderColor: '#4895ef',
+                            borderWidth: 1
+                        }] : [])
+                    ]
+                };
+
+                renderChart('alunosChart', alunosChartType, alunosChartDataCache, {
+                    ...chartConfig,
+                    scales: {
+                        y: {beginAtZero: true, grid: {display: true}, title: {display: true, text: 'Quantidade'}},
+                        x: {grid: {display: false}, title: {display: true, text: 'Escolas'}}
+                    },
+                    plugins: {
+                        ...chartConfig.plugins,
+                        title: {display: true, text: 'Distribuição por Escola (filtrada)', font: {size: 16}}
+                    }
+                });
+
+                // ----- Pizza Presença x Ausência -----
+                renderChart('presencaChart', 'pie', {
+                    labels: ['Presentes', 'Ausentes'],
+                    datasets: [{
+                        data: [detalhesData.total_presente ?? 0, detalhesData.total_ausente ?? 0],
+                        backgroundColor: ['#4bc0c0', '#ff6384'],
+                        borderWidth: 0
+                    }]
+                }, {
+                    ...chartConfig,
+                    plugins: {
+                        ...chartConfig.plugins,
+                        title: {display: true, text: 'Frequência de Alunos', font: {size: 16}},
+                        datalabels: {
+                            formatter: (value, context) => {
+                                const total = (context.chart.data.datasets[0].data || []).reduce((a, b) => a + b, 0);
+                                if (!total) return '0%';
+                                const pct = Math.round((value / total) * 100);
+                                return `${pct}%`;
+                            }
+                        }
+                    }
+                });
+
+                // ----- Donut Professores -----
+                renderChart('professoresChart', 'doughnut', {
+                    labels: ['Com Chamada', 'Sem Chamada'],
+                    datasets: [{
+                        data: [
+                            (detalhesData.professores_com_chamada || []).length,
+                            (detalhesData.professores_sem_chamada || []).length
+                        ],
+                        backgroundColor: ['#36a2eb', '#ffce56'],
+                        borderWidth: 0
+                    }]
+                }, {
+                    ...chartConfig,
+                    cutout: '70%',
+                    plugins: {
+                        ...chartConfig.plugins,
+                        title: {display: true, text: 'Registro de Professores', font: {size: 16}}
+                    }
+                });
+
+                updateDetails(detalhesData);
+
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showError('Erro ao carregar dados do dashboard');
+                // Evita gráficos quebrados quando erro: destrói instâncias
+                ['alunosChart', 'presencaChart', 'professoresChart'].forEach(destroyChart);
+            }
+        }
+
+        // ---- Eventos / Interação ----
+        function setupEventListeners() {
+            // Alternar tipo do gráfico principal
+            document.querySelectorAll('.btn-chart-action').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.btn-chart-action').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const chartType = this.dataset.type; // 'bar' | 'line'
+                    const chartId = this.closest('.chart-container').querySelector('canvas').id;
+
+                    if (chartId === 'alunosChart') {
+                        alunosChartType = chartType;
+                        if (alunosChartDataCache) {
+                            renderChart('alunosChart', alunosChartType, alunosChartDataCache, {
+                                ...chartConfig,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: {display: true},
+                                        title: {display: true, text: 'Quantidade'}
+                                    },
+                                    x: {grid: {display: false}, title: {display: true, text: 'Escolas'}}
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Mostrar/ocultar filtros de data ao escolher "Personalizado"
+            document.getElementById('periodo').addEventListener('change', function () {
+                const dateFilters = document.querySelectorAll('.date-filters');
+                dateFilters.forEach(el => el.style.display = (this.value === 'custom') ? 'block' : 'none');
+            });
+
+            // Disparar mudança inicial para esconder datas
+            document.getElementById('periodo').dispatchEvent(new Event('change'));
+        }
+
+        // ---- Inicialização ----
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            // datas padrão
+            const di = document.getElementById('data_ini');
+            const df = document.getElementById('data_fim');
+            if (di && df) {
+                di.valueAsDate = thirtyDaysAgo;
+                df.valueAsDate = today;
+            }
+
+            setupEventListeners();
+            renderDashboard();
+        });
+
+        document.getElementById('filtros-dashboard').addEventListener('submit', (e) => {
+            e.preventDefault();
+            renderDashboard();
+        });
+    </script>
+
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --danger-color: #f72585;
+            --success-color: #4cc9f0;
+            --warning-color: #ff9f1c;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        /* Reset e Base */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+
+        .module {
+            border: none;
+            margin: 0;
+            background: #fff0;
+        }
+
+
+        h1, h2, h3, h4 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        /* Layout Principal */
+        .modern-dashboard {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Cabeçalho */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .header-content {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .header-content h1 {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-content h1 i {
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            color: var(--gray-color);
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 300px;
+        }
+
+        /* Formulário de Filtros */
+        .filter-form.inline-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 160px;
+            flex: 1;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-filters {
+            display: none;
+        }
+
+        /* Botões */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+
+        .btn-filter {
+            background: var(--success-color);
+            color: white;
+            height: 40px;
+            min-width: 120px;
+        }
+
+
+        .btn-chart-action {
+            background: none;
+            border: none;
+            color: var(--gray-color);
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: var(--transition);
+        }
+
+        .btn-icon.edit {
+            background: var(--accent-color);
+        }
+
+        .btn-icon.delete {
+            background: var(--danger-color);
+        }
+
+        /* Layout em Colunas */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .details-column {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .details-column {
+                grid-column: span 1;
+            }
+        }
+
+        /* Seções e Cards */
+        .section-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin: 0;
+        }
+
+        .section-header h2 i {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        /* Estatísticas Rápidas */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.school {
+            background: #3a86ff;
+        }
+
+        .stat-icon.student {
+            background: #8338ec;
+        }
+
+        .stat-icon.teacher {
+            background: #ff006e;
+        }
+
+        .stat-icon.department {
+            background: #fb5607;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-info h3 {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            line-height: 1;
+        }
+
+        .stat-details {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .stat-details .present {
+            color: #28a745;
+        }
+
+        .stat-details .absent,
+        .stat-details .without-class {
+            color: #dc3545;
+        }
+
+        .stat-details .with-class {
+            color: #17a2b8;
+        }
+
+        /* Departamentos */
+        .departments-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .department-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            overflow: hidden;
+            border: 1px solid #eee;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            padding: 1rem;
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            color: white;
+            font-size: 1rem;
+            margin: 0;
+            flex: 1;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-right: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            margin-bottom: 0.7rem;
+            align-items: flex-start;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--gray-color);
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .info-label i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .info-value {
+            flex: 1;
+            color: var(--dark-color);
+            word-break: break-word;
+            font-size: 0.85rem;
+        }
+
+        /* Gráficos */
+        .chart-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+
+        .chart-container.large {
+            min-height: 350px;
+        }
+
+        .chart-header {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-header h3 {
+            font-size: 1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .chart-header i {
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .chart-wrapper {
+            padding: 1rem;
+            height: 300px;
+        }
+
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Detalhes */
+        .details-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .details-header {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .details-header h3 {
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .details-header i {
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .details-grid {
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .detail-card {
+            background: var(--light-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            transition: var(--transition);
+        }
+
+        .detail-card.highlight {
+            background: white;
+            border: 1px solid #eee;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .detail-header h4 {
+            font-size: 0.9rem;
+            flex: 1;
+            margin: 0;
+        }
+
+        .detail-header i {
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .detail-list {
+            margin: 0;
+            padding-left: 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        .detail-list li {
+            margin-bottom: 0.3rem;
+        }
+
+        /* Cards de Informação */
+        .info-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .info-card {
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .info-card.highlight {
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info-card.attendance {
+            border-left: 4px solid #28a745;
+        }
+
+        .info-card.absence {
+            border-left: 4px solid #dc3545;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .info-card.attendance .card-icon {
+            background: #28a745;
+        }
+
+        .info-card.absence .card-icon {
+            background: #dc3545;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-content h3 {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+            margin: 0 0 0.3rem 0;
+        }
+
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card-trend {
+            font-size: 0.75rem;
+            margin-top: 0.3rem;
+        }
+
+        .card-trend.positive {
+            color: #28a745;
+        }
+
+        .card-trend.negative {
+            color: #dc3545;
+        }
+
+        /* Badges */
+        .badge {
+            background: var(--light-color);
+            color: var(--gray-color);
+            padding: 0.25rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Estado Vazio */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem 1rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            color: var(--gray-color);
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            color: var(--gray-color);
+            font-size: 1rem;
+        }
+
+        /* Mensagem de Erro */
+        .error-message {
+            background: #fff5f5;
+            border: 1px solid #ffdddd;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            text-align: center;
+            color: var(--danger-color);
+            grid-column: 1 / -1;
+        }
+
+        .error-message i {
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .error-message p {
+            margin: 0;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* Form Controls */
+        .form-control {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            height: 40px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            background-size: 1rem;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1.5rem;
+            }
+
+            .header-actions {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .filter-form.inline-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                min-width: auto;
+            }
+
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Ocultar botão padrão de adicionar */
+        .object-tools {
+            display: none;
+        }
+    </style>
+{% endblock %}

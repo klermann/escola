@@ -1,231 +1,354 @@
 {% extends "admin/change_list.html" %}
 {% load static %}
+{% load admin_list %}
 
 {% block extrastyle %}
-{{ block.super }}
-<style>
-    /* Container principal */
-    .professores-container {
-        padding: 20px 0;
-        width: 100%;
-    }
-    
-    /* Header com botão de adicionar */
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .add-professor-btn {
-        background-color: #447e9b;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border: none;
-        font-weight: 400;
-        font-size: 0.9rem;
-        display: inline-flex;
-        align-items: center;
-        cursor: pointer;
-    }
-    
-    .add-professor-btn:hover {
-        background-color: #447e9b;
-        color: white;
-    }
-    
-    .add-professor-btn:before {
-        content: "+";
-        margin-right: 5px;
-        font-size: 1.1rem;
-    }
-    
-    /* Grid de cards */
-    .professor-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-        width: 100%;
-    }
-    
-    /* Card individual */
-    .professor-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        height: 100%;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .professor-card:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transform: translateY(-3px);
-        border-color: #79aec8;
-    }
-    
-    /* Cabeçalho do card */
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        border-bottom: 1px solid #f0f0f0;
-        background: #f9f9f9;
-    }
-    
-    .card-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-    
-    /* Conteúdo do card */
-    .card-body {
-        padding: 20px;
-        flex: 1;
-        text-align: center;
-    }
-    
-    .card-body h3 {
-        margin: 0 0 10px 0;
-        color: #447e9b;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    
-    /* Botões de ação */
-    .edit-delete-container {
-        display: flex;
-        gap: 8px;
-    }
-    
-    .edit-btn, .delete-btn {
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        background-color: transparent;
-        transition: background-color 0.2s, border-color 0.2s;
-        cursor: pointer;
-    }
-
-    .edit-btn:hover, .delete-btn:hover {
-        background-color: #e0e0e0;
-        border-color: #999;
-    }
-
-    .action-icon {
-        width: 12px;
-        height: 12px;
-        filter: none;
-    }
-
-    .edit-btn .action-icon {
-        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%);
-    }
-
-    .delete-btn .action-icon {
-        filter: brightness(0) saturate(100%) invert(37%) sepia(89%) saturate(1437%) hue-rotate(192deg) brightness(97%) contrast(94%);
-    }
-    
-    /* Mensagem quando vazio */
-    .empty-message {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 30px;
-        color: #666;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px dashed #ddd;
-    }
-
-    /* Nome do professor como link */
-    .professor-link {
-        color: #447e9b;
-        text-decoration: none;
-        transition: color 0.2s ease-in-out;
-    }
-    .professor-link:hover {
-        color: #79aec8;
-    }
-
-    /* Responsividade */
-    @media (max-width: 1024px) {
-        .professor-cards {
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    {{ block.super }}
+    <style>
+        html, body, #content-main, .module {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
-    }
 
-    @media (max-width: 768px) {
-        .professor-cards {
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
+        #content-main {
+            padding: 0;
+            background: #f7f9fa;
+            min-height: 100vh;
         }
-        
-        .page-header {
+
+        .dashboard-container {
+            display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
+            height: 100%;
+            gap: 16px;
+            width: 100vw;
+            max-width: 100vw;
         }
-    }
 
-    @media (max-width: 480px) {
-        .professor-cards {
-            grid-template-columns: 1fr;
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 2px 0 2px;
+            background: transparent;
         }
-    }
-</style>
+
+        .page-header-info {
+            font-size: 1.1rem;
+            color: #222;
+            font-weight: 600;
+        }
+
+        .add-professor-btn {
+            background-color: #447e9b;
+            color: white;
+            padding: 10px 22px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.18s;
+            box-shadow: 0 2px 8px rgba(80, 110, 120, 0.08);
+        }
+
+        .add-professor-btn:hover {
+            background: #295a70;
+            transform: translateY(-1px) scale(1.04);
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex: 1 1 0%;
+            width: 100%;
+            min-width: 0;
+            gap: 0;
+            padding: 28px 2px 42px 2px;
+            box-sizing: border-box;
+        }
+
+        .main-content {
+            flex: 1 1 0%;
+            min-width: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .professor-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 28px;
+            width: 100%;
+        }
+
+        .professor-card {
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e3e9ef;
+            box-shadow: 0 2px 8px rgba(80, 110, 120, 0.07);
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+            position: relative;
+            padding-bottom: 12px;
+            min-width: 0;
+        }
+
+        .professor-card:hover {
+            box-shadow: 0 8px 28px rgba(80, 140, 180, 0.12);
+            border-color: #79aec8;
+            transform: translateY(-2px) scale(1.015);
+        }
+
+        .card-actions {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .edit-btn, .delete-btn {
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 7px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.16s, transform 0.14s;
+            width: 27px;
+            height: 27px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .edit-btn:hover, .delete-btn:hover {
+            background: #eef6fa;
+            transform: scale(1.1);
+        }
+
+        .action-icon {
+            width: 15px;
+            height: 15px;
+        }
+
+        .card-body {
+            padding: 30px 22px 18px;
+            text-align: center;
+        }
+
+        .card-body h3 {
+            margin: 0 0 12px 0;
+            color: #295a70;
+            font-size: 1.13rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            word-break: break-word;
+        }
+
+        .card-body p {
+            font-size: 0.97rem;
+            margin: 9px 0 0 0;
+            color: #444;
+            line-height: 1.45;
+        }
+
+        .professor-link {
+            color: #295a70;
+            text-decoration: none;
+            border-bottom: 1px dashed #79aec8;
+            transition: color 0.17s;
+        }
+
+        .professor-link:hover {
+            color: #79aec8;
+        }
+
+        .empty-message {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 55px;
+            background: #f1f8fb;
+            color: #6c7a89;
+            border-radius: 10px;
+            border: 1px dashed #cdd7e1;
+            font-size: 1.14rem;
+        }
+
+        .filters-section {
+            width: 330px;
+            background: #f8fafc;
+            padding: 28px 20px 28px 22px;
+            border-radius: 13px;
+            border: 1px solid #e5e7eb;
+            height: fit-content;
+            margin-left: 38px;
+            position: sticky;
+            top: 32px;
+            align-self: flex-start;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .filters-section h2 {
+            font-size: 1.19rem;
+            margin-bottom: 16px;
+            color: #447e9b;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c5c8c9;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8b0b8;
+        }
+
+        /* Responsividade: filtro abaixo dos cards em telas menores */
+        @media (max-width: 1100px) {
+            .content-wrapper {
+                flex-direction: column;
+                padding: 20px 10px 30px 10px;
+                gap: 20px;
+            }
+
+            .filters-section {
+                margin-left: 0;
+                width: 100%;
+                max-width: 100vw;
+                position: static;
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .professor-cards {
+                gap: 12px;
+            }
+
+            .dashboard-container, .content-wrapper {
+                padding: 0 !important;
+            }
+
+            .page-header {
+                padding: 18px 8px 0 8px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .professor-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-section {
+                padding: 13px 6px 12px 6px;
+            }
+        }
+
+        /* Garante layout vertical para cada filtro */
+        .filters-section .filter-spec {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 16px;
+        }
+
+        /* Rótulo um pouquinho mais espaçado */
+        .filters-section .filter-spec h3 {
+            margin-bottom: 6px;
+        }
+
+        /* Faz com que todos os selects ocupem 100% da largura do .filters-section */
+        .filters-section select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+    </style>
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <div class="page-header">
-        <p><strong>{{ cl.result_count }} Professor{{ cl.result_count|pluralize:"es" }}</strong></p>
-        <button style="float: right;" class="add-professor-btn" onclick="window.location.href='{% url 'admin:core_professor_add' %}'">
-            Adicionar Professor
-        </button>
-    </div>
-    <div class="module" id="changelist">
-        <div class="professores-container">
-            {% if cl.result_list %}
-                <div class="professor-cards">
-                    {% for obj in cl.result_list %}
-                    <div class="professor-card">
-                        <div class="card-header">
-                            <div class="card-actions">
-                                <div class="edit-delete-container">
-                                    <button class="edit-btn" title="Editar" onclick="window.location.href='{% url 'admin:core_professor_change' obj.pk %}'">
-                                        <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar" class="action-icon">
-                                    </button>
-                                    <button class="delete-btn" title="Excluir" onclick="if(confirm('Tem certeza que deseja excluir {{ obj.nome }}?')) window.location.href='{% url 'admin:core_professor_delete' obj.pk %}'">
-                                        <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir" class="action-icon">
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h3><a href="{% url 'admin:core_professor_change' obj.pk %}" class="professor-link">{{ obj.nome }}</a></h3>
-                            <p><strong>CPF:</strong> {{ obj.cpf }}</p>
-                            <p><strong>Disciplinas:</strong> {% if obj.disciplinas.all %}{{ obj.disciplinas.all|join:", " }}{% else %}Nenhuma{% endif %}</p>
-                            <p><strong>Turmas:</strong> {% if obj.turmas.all %}{{ obj.turmas.all|join:", " }}{% else %}Nenhuma{% endif %}</p>
-                        </div>
+    <div id="content-main">
+        <div class="module" id="changelist">
+            <div class="dashboard-container">
+                <div class="page-header">
+                    <div class="page-header-info">
+                        <strong>{{ cl.result_count }} Professor{{ cl.result_count|pluralize:"es" }}
+                            encontrado{{ cl.result_count|pluralize:"s" }}</strong>
                     </div>
-                    {% endfor %}
+                    <button class="add-professor-btn"
+                            onclick="window.location.href='{% url 'admin:core_professor_add' %}'">
+                        + Adicionar Professor
+                    </button>
                 </div>
-            {% else %}
-                <div class="empty-message">
-                    Nenhum professor encontrado.
+                <div class="content-wrapper">
+                    <div class="main-content">
+                        {% if cl.result_list %}
+                            <div class="professor-cards">
+                                {% for obj in cl.result_list %}
+                                    <div class="professor-card">
+                                        <div class="card-actions">
+                                            <button class="edit-btn" title="Editar"
+                                                    onclick="window.location.href='{% url 'admin:core_professor_change' obj.pk %}'">
+                                                <img src="{% static 'admin/img/icon-changelink.svg' %}" alt="Editar"
+                                                     class="action-icon">
+                                            </button>
+                                            <button class="delete-btn" title="Excluir"
+                                                    onclick="if(confirm('Tem certeza que deseja excluir {{ obj.nome }}?')) window.location.href='{% url 'admin:core_professor_delete' obj.pk %}'">
+                                                <img src="{% static 'admin/img/icon-deletelink.svg' %}" alt="Excluir"
+                                                     class="action-icon">
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <h3>
+                                                <a href="{% url 'admin:core_professor_change' obj.pk %}"
+                                                   class="professor-link">{{ obj.nome }}</a>
+                                            </h3>
+                                            <p><strong>CPF:</strong> {{ obj.cpf }}</p>
+                                            <p><strong>Disciplinas:</strong> {% if obj.disciplinas.all %}
+                                                {{ obj.disciplinas.all|join:", " }}{% else %}Nenhuma{% endif %}</p>
+                                            <p><strong>Turmas:</strong>
+                                                {% if obj.turmas.all %}{{ obj.turmas.all|join:", " }}{% else %}
+                                                    Nenhuma{% endif %}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-message">
+                                Nenhum professor encontrado.
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="filters-section">
+                        <h2>Filtrar</h2>
+                        {% for spec in cl.filter_specs %}
+                            {% admin_list_filter cl spec %}
+                        {% endfor %}
+                    </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}

@@ -182,7 +182,14 @@
         <button class="add-escola-btn" onclick="window.location.href='{% url 'admin:core_escola_add' %}'">
             Adicionar Escola
         </button>
-    </div>
+    </div><form method="get" id="filtro-ativa-form" style="margin-bottom: 18px;">
+    <label for="id_ativa">Mostrar:</label>
+    <select name="ativa" id="id_ativa" onchange="this.form.submit();" style="margin-left:8px; margin-right:16px;">
+        <option value="" {% if not request.GET.ativa %}selected{% endif %}>Todas</option>
+        <option value="1" {% if request.GET.ativa == '1' %}selected{% endif %}>Apenas ativas</option>
+        <option value="0" {% if request.GET.ativa == '0' %}selected{% endif %}>Apenas inativas</option>
+    </select>
+</form>
     <div class="module" id="changelist">
         <div class="escolas-container">
             {% if escolas %}

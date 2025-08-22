@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="stats-card">
+        <h3>Escolas</h3>
+        <p>{{ total_escolas }}</p>
+    </div>
+    <div class="stats-card">
+        <h3>Alunos</h3>
+        <p>{{ total_alunos }}</p>
+    </div>
+    <div class="stats-card">
+        <h3>Professores</h3>
+        <p>{{ total_professores }}</p>
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="alunosChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Código JavaScript para carregar os gráficos
+</script>
+{% endblock %}

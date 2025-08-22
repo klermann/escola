@@ -1,0 +1,133 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'admin/css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="reports-header">
+        <h1>Relatórios da Escola: {{ escola.nome }}</h1>
+        <p>Diretoria: {{ escola.diretoria_ensino.nome }}</p>
+    </div>
+
+    <div class="report-section">
+        <h2>Desempenho por Disciplina</h2>
+        <div class="chart-container">
+            <canvas id="gradesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2>Frequência Mensal por Turma</h2>
+        <div class="chart-container">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="alunosPorEscolaChart"></canvas>
+    </div>
+
+{% endblock %}
+
+{% block extrajs %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Gráfico de notas
+        fetch("{% url 'admin:core_escola_grades_data' escola.id %}")
+            .then(response => response.json())
+            .then(data => {
+                new Chart(
+                    document.getElementById('gradesChart'),
+                    {
+                        type: 'bar',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 10,
+                                    title: {
+                                        display: true,
+                                        text: 'Média das Notas'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Disciplinas'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Média por Disciplina por Bimestre'
+                                }
+                            }
+                        }
+                    }
+                );
+            });
+
+        // Gráfico de frequência
+        fetch("{% url 'admin:core_escola_attendance_data' escola.id %}")
+            .then(response => response.json())
+            .then(data => {
+                new Chart(
+                    document.getElementById('attendanceChart'),
+                    {
+                        type: 'line',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    title: {
+                                        display: true,
+                                        text: 'Percentual de Presença (%)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Meses'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Frequência Mensal por Turma'
+                                }
+                            }
+                        }
+                    }
+                );
+            });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/alunos-por-escola/')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('alunosPorEscolaChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                });
+        });
+    </script>
+{% endblock %}

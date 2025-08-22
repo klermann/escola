@@ -2,134 +2,185 @@
 {% load static %}
 
 {% block extrastyle %}
-{{ block.super }}
-<style>
-    /* Container principal */
-    .avaliacoes-container {
-        padding: 20px 0;
-        width: 100%;
-    }
-
-    /* Grid de cards */
-    .avaliacoes-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-        width: 100%;
-    }
-
-    /* Card individual */
-    .avaliacao-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        background: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        text-decoration: none;
-        color: inherit;
-        height: 100%;
-        box-sizing: border-box;
-    }
-
-    .avaliacao-card:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transform: translateY(-3px);
-        border-color: #79aec8;
-    }
-
-    /* Conteúdo do card */
-    .avaliacao-card h3 {
-        margin: 0 0 10px 0;
-        color: #447e9b;
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .avaliacao-card p {
-        margin: 0 0 8px 0;
-        color: #666;
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-
-    /* Mensagem quando vazio */
-    .empty-message {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 30px;
-        color: #666;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px dashed #ddd;
-    }
-
-    /* Seção por ano */
-    .year-section {
-        margin-bottom: 30px;
-    }
-
-    .year-header {
-        font-size: 1.3rem;
-        color: #333;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #eee;
-        margin-bottom: 20px;
-        font-weight: 600;
-    }
-
-    /* Responsividade */
-    @media (max-width: 1024px) {
-        .avaliacoes-grid {
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        }
-    }
-
-    @media (max-width: 768px) {
-        .avaliacoes-grid {
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 15px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .avaliacoes-grid {
-            grid-template-columns: 1fr;
+    {{ block.super }}
+    <style>
+        /* Container principal */
+        .avaliacoes-container {
+            padding: 20px 0;
+            width: 100%;
         }
 
+        /* Grid de cards */
+        .avaliacoes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        /* Card individual */
         .avaliacao-card {
-            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            height: 100%;
+            box-sizing: border-box;
         }
-    }
-</style>
+
+        .avaliacao-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            border-color: #79aec8;
+        }
+
+        /* Conteúdo do card */
+        .avaliacao-card h3 {
+            margin: 0 0 10px 0;
+            color: #447e9b;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .avaliacao-card p {
+            margin: 0 0 8px 0;
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Mensagem quando vazio */
+        .empty-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ddd;
+        }
+
+        /* Seção por ano */
+        .year-section {
+            margin-bottom: 30px;
+        }
+
+        .year-header {
+            font-size: 1.3rem;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1024px) {
+            .avaliacoes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .avaliacoes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .avaliacoes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .avaliacao-card {
+                padding: 15px;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <div class="module" id="changelist">
-        <div class="avaliacoes-container">
-            {% regroup turmas|dictsortreversed:"ano" by ano as turmas_por_ano %}
 
-            {% if turmas_por_ano %}
-                {% for ano in turmas_por_ano %}
-                    <div class="year-section">
-                        <div class="year-header">Turmas de {{ ano.grouper }}</div>
-                        <div class="avaliacoes-grid">
-                            {% for turma in ano.list %}
-                            <a href="{% url 'admin:core_avaliacao_form' turma.id %}" class="avaliacao-card">
-                                <h3>{{ turma.nome }}</h3>
-                                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
-                            </a>
+    <div id="content-main">
+
+        <div style="display: flex; align-items: flex-start; width: 100%;">
+            <div style="flex: 1;">
+                <div class="module" id="changelist">
+                    <div class="avaliacoes-container">
+    {{ block.super }}
+    {{ cl.sidebar }}
+                        {% regroup turmas|dictsortreversed:"ano" by ano as turmas_por_ano %}
+
+                        {% if turmas_por_ano %}
+                            {% for ano in turmas_por_ano %}
+                                <div class="year-section">
+                                    <div class="year-header">Turmas de {{ ano.grouper }}</div>
+                                    <div class="avaliacoes-grid">
+                                        {% for turma in ano.list %}
+                                            <a href="{% url 'admin:core_avaliacao_form' turma.id %}"
+                                               class="avaliacao-card">
+                                                <h3>{{ turma.nome }}</h3>
+                                                <p><strong>Escola:</strong> {{ turma.escola.nome }}</p>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             {% endfor %}
-                        </div>
+                        {% else %}
+                            <div class="empty-message">
+                                Nenhuma turma cadastrada.
+                            </div>
+                        {% endif %}
                     </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-message">
-                    Nenhuma turma cadastrada.
                 </div>
-            {% endif %}
+            </div>
+            <div style="width: 320px; margin-left: 24px;">
+                <div style="background: #f5f8fa; border-radius: 8px; border: 1px solid #dbeafe; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 20px;">
+                    <div style="background: #b3c6d6; border-radius: 4px 4px 0 0; color: #fff; font-weight: bold; padding: 8px 12px; margin: -20px -20px 16px -20px;">
+                        FILTRO
+                    </div>
+                    <form method="get" id="filtros-form">
+                        <div>
+                            <label>Escola</label>
+                            <select name="escola" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                {% for escola in escolas %}
+                                    <option value="{{ escola.id }}"
+                                            {% if escola.id|stringformat:'s' == escola_selecionada %}selected{% endif %}>{{ escola.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Turma</label>
+                            <select name="turma" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                {% for turma in turmas_filter %}
+                                    <option value="{{ turma.id }}"
+                                            {% if turma.id|stringformat:'s' == turma_selecionada %}selected{% endif %}>{{ turma.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Ano</label>
+                            <select name="ano" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                {% for ano in anos_disponiveis %}
+                                    <option value="{{ ano }}"
+                                            {% if ano|stringformat:'s' == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
         </div>
+
+
     </div>
-</div>
 {% endblock %}

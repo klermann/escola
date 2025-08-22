@@ -934,3 +934,20 @@ link:focus,
   color: #ffbc3b;
 }
 /*# sourceMappingURL=style.css.map */
+.chart-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.chart-container > div {
+    flex: 1;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#dashboard-detalhado {
+    margin-top: 2rem;
+}

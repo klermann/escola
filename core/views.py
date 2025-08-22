@@ -51,6 +51,7 @@ from django.contrib.auth.views import LoginView
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login
 from django.views.decorators.csrf import csrf_exempt
+from .models import Aluno
 
 logger = logging.getLogger(__name__)
 

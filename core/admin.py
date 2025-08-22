@@ -3,10 +3,12 @@ from django.contrib import admin, messages
 from datetime import datetime, date, timedelta
 
 from django.core.exceptions import ValidationError
+from django.http import JsonResponse
 from django.utils.html import format_html
 from django.template.response import TemplateResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Diretor, Escola, Professor, Turma, Aluno, Disciplina, Bimestre, Avaliacao, Frequencia, PeriodoLetivo, DiaLetivo, DiretoriaEnsino
+from .models import Diretor, Escola, Professor, Turma, Aluno, Disciplina, Bimestre, Avaliacao, Frequencia, \
+    PeriodoLetivo, DiaLetivo, DiretoriaEnsino
 from django.urls import reverse, path
 from django.utils.dateparse import parse_date
 import logging
@@ -15,10 +17,26 @@ from django.db.models import Max
 from django.db.models import Q
 from calendar import monthrange
 from collections import defaultdict
+from django.contrib.admin import SimpleListFilter
+from django.db.models import Count
+from django.db.models import Case, When, Value, IntegerField, CharField, Max
+# core/admin.py
+
+from django.contrib import admin
+from .models import (
+    Aluno, AlunoPessoal, AlunoResponsaveis, AlunoContato,
+    AlunoEscolar, AlunoComplementar
+)
+from .forms import (
+    AlunoPessoalForm, AlunoResponsaveisForm, AlunoContatoForm,
+    AlunoEscolarForm, AlunoComplementarForm
+)
 
 logger = logging.getLogger(__name__)
 
-
+PRESENTES = ['P', 'presente']
+AUSENTES  = ['A', 'ausente']
+JUSTIFICADAS = ['J', 'justificada']
 
 class FrequenciaForm(forms.ModelForm):
     class Meta:
@@ -40,7 +58,64 @@ class FrequenciaForm(forms.ModelForm):
             ).distinct()
         else:
             self.fields['aluno'].queryset = Aluno.objects.filter(ativo=True)
-                
+
+# -------- Inlines OneToOne ----------
+class AlunoPessoalInline(admin.StackedInline):
+    model = AlunoPessoal
+    form = AlunoPessoalForm
+    can_delete = False
+    max_num = 1
+    extra = 1
+    verbose_name_plural = "Dados pessoais"
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 1 if obj is None else 0
+
+class AlunoResponsaveisInline(admin.StackedInline):
+    model = AlunoResponsaveis
+    form = AlunoResponsaveisForm
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Responsáveis"
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 1 if obj is None else 0
+
+class AlunoContatoInline(admin.StackedInline):
+    model = AlunoContato
+    form = AlunoContatoForm
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Contatos"
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 1 if obj is None else 0
+
+class AlunoEscolarInline(admin.StackedInline):
+    model = AlunoEscolar
+    form = AlunoEscolarForm
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Dados escolares"
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 1 if obj is None else 0
+
+class AlunoComplementarInline(admin.StackedInline):
+    model = AlunoComplementar
+    form = AlunoComplementarForm
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Dados complementares"
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 1 if obj is None else 0
+
+# -------- Admin do Aluno ----------
 @admin.register(Aluno)
 class AlunoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'ra', 'data_nascimento_formatada', 'ativo', 'quilombola', 'turmas_list')
@@ -49,18 +124,44 @@ class AlunoAdmin(admin.ModelAdmin):
     list_per_page = 20
     date_hierarchy = 'data_nascimento'
     ordering = ('nome',)
-    filter_horizontal = ('turmas',)  # Para melhor interface de seleção de turmas
+    filter_horizontal = ('turmas',)
+    change_form_template = 'admin/core/aluno/change_form_tabs.html'
+
+    # 1ª tela: dados mínimos do Aluno (nome/ra/data/ativo/quilombola/turmas)
+    fieldsets = (
+        ('Identificação do Aluno', {
+            'fields': ('nome', 'ra', 'data_nascimento', 'ativo', 'quilombola', 'turmas')
+        }),
+    )
+
+    inlines = [
+        AlunoPessoalInline,
+        AlunoResponsaveisInline,
+        AlunoContatoInline,
+        AlunoEscolarInline,
+        AlunoComplementarInline
+    ]
 
     def turmas_list(self, obj):
         return ", ".join([t.nome for t in obj.turmas.all()])
-
     turmas_list.short_description = 'Turmas'
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo aluno ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
-        
+
+    # Pós-salvar: cria automaticamente blocos OneToOne vazios para aparecerem como "abas"
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Garante que os inlines existam após inserir o aluno
+        AlunoPessoal.objects.get_or_create(aluno=obj)
+        AlunoResponsaveis.objects.get_or_create(aluno=obj)
+        AlunoContato.objects.get_or_create(aluno=obj)
+        AlunoEscolar.objects.get_or_create(aluno=obj, defaults={'numero_matricula': f"M-{obj.id:06d}", 'ano_serie_atual': ''})
+        AlunoComplementar.objects.get_or_create(aluno=obj)
+
+
 #############################################################################
 #############################################################################
 #############################################################################
@@ -277,30 +378,101 @@ class FrequenciaAdmin(admin.ModelAdmin):
             'admin/core/frequencia/turma_list.html',
             context
         )
+
+
 #############################################################################
 #############################################################################
 #############################################################################
-#############################################################################    
+#############################################################################
+
+
+class NumeroAlunosFilter(SimpleListFilter):
+    title = 'Número de Alunos'  # Título que aparece no admin
+    parameter_name = 'num_alunos'  # Parâmetro usado na URL
+
+    def lookups(self, request, model_admin):
+        """
+        Retorna as opções de filtro que serão exibidas.
+        """
+        return (
+            ('0', 'Sem alunos'),
+            ('1-10', '1 a 10 alunos'),
+            ('11-20', '11 a 20 alunos'),
+            ('21+', 'Mais de 20 alunos'),
+        )
+
+    def queryset(self, request, queryset):
+        """
+        Filtra o queryset baseado no valor selecionado.
+        """
+        value = self.value()
+        if not value:
+            return queryset
+
+        # Annotate each turma with the count of alunos
+        queryset = queryset.annotate(num_alunos=Count('alunos'))
+
+        if value == '0':
+            return queryset.filter(num_alunos=0)
+        elif value == '1-10':
+            return queryset.filter(num_alunos__gte=1, num_alunos__lte=10)
+        elif value == '11-20':
+            return queryset.filter(num_alunos__gte=11, num_alunos__lte=20)
+        elif value == '21+':
+            return queryset.filter(num_alunos__gte=21)
+
+        return queryset
+
+class TurmaNomeFilter(SimpleListFilter):
+    # Título que aparecerá na interface admin
+    title = 'Filtrar por Turma'
+
+    # Parâmetro que será usado na URL
+    parameter_name = 'turma_nome'
+
+    def lookups(self, request, model_admin):
+        """
+        Retorna a lista de opções que aparecerão no filtro.
+        Cada tupla contém (valor_na_url, label_visivel)
+        """
+        # Obtém todas as turmas ordenadas por nome
+        turmas = Turma.objects.all().order_by('nome')
+        return [(turma.id, turma.nome) for turma in turmas]
+
+    def queryset(self, request, queryset):
+        """
+        Filtra o queryset baseado no valor selecionado no filtro
+        """
+        if self.value():
+            return queryset.filter(id=self.value())
+        return queryset
+
 @admin.register(Turma)
 class TurmaAdmin(admin.ModelAdmin):
+    list_filter = (
+        'ano',
+        'escola',
+        'professores',
+        NumeroAlunosFilter,
+    )
     list_display = ('__str__', 'avaliacao_link', 'alunos_link')
-    list_filter = ('ano', 'escola')  # Adicionei filtro por ano
     search_fields = ('nome', 'escola__nome')
-    
+
     def get_urls(self):
         urls = super().get_urls()
         app_label = self.model._meta.app_label
         custom_urls = [
-            path('<int:turma_id>/avaliacao/', self.admin_site.admin_view(self.avaliacao_form_view), 
-                name='%s_%s_avaliacao' % (app_label, self.model._meta.model_name)), 
-            path('<int:turma_id>/alunos/', self.admin_site.admin_view(self.manage_alunos_view), 
-                name='%s_%s_alunos' % (app_label, self.model._meta.model_name)),
+            path('<int:turma_id>/avaliacao/', self.admin_site.admin_view(self.avaliacao_form_view),
+                 name='%s_%s_avaliacao' % (app_label, self.model._meta.model_name)),
+            path('<int:turma_id>/alunos/', self.admin_site.admin_view(self.manage_alunos_view),
+                 name='%s_%s_alunos' % (app_label, self.model._meta.model_name)),
         ]
         return custom_urls + urls
 
     def alunos_link(self, obj):
         url = reverse('admin:core_turma_alunos', args=[obj.id])
         return format_html('<a class="button" href="{}">Inserir alunos</a>', url)
+
     alunos_link.short_description = 'Alunos'
 
     def manage_alunos_view(self, request, turma_id):
@@ -418,10 +590,12 @@ class TurmaAdmin(admin.ModelAdmin):
         # Handle POST request (saving grades)
         if request.method == "POST":
             self._processar_notas(request, alunos, disciplinas, bimestre, turma)
-            return redirect(f"{reverse('admin:core_turma_avaliacao', args=[turma.id])}?bimestre={bimestre.id}&data_fechamento={data_fechamento}")
+            return redirect(
+                f"{reverse('admin:core_turma_avaliacao', args=[turma.id])}?bimestre={bimestre.id}&data_fechamento={data_fechamento}")
 
         # Handle GET request (displaying the form)
-        context = self._prepare_context(request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento)
+        context = self._prepare_context(request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict,
+                                        data_fechamento)
         return render(request, 'admin/core/turma/avaliacao_form.html', context)
 
     def _get_bimestre(self, request, bimestres):
@@ -429,21 +603,22 @@ class TurmaAdmin(admin.ModelAdmin):
         if bimestre_id:
             return get_object_or_404(Bimestre, id=bimestre_id)
         return bimestres.first()
-    
+
     def avaliacao_link(self, obj):
         url = reverse('admin:core_turma_avaliacao', args=[obj.id])
         return format_html('<a href="{}">Gerenciar Avaliações</a>', url)
+
     avaliacao_link.short_description = 'Avaliações'
 
     def _get_notas_dict(self, turma, bimestre, data_fechamento=None):
         logger.debug(f"Buscando notas para turma {turma.id}, bimestre {bimestre.id}, data_fechamento {data_fechamento}")
         # Start with base query filtering by turma and bimestre
         query = Avaliacao.objects.filter(turma=turma, bimestre=bimestre)
-        
+
         # If data_fechamento is provided, add it to the filter
         if data_fechamento:
             query = query.filter(data_fechamento=data_fechamento)
-        
+
         avaliacoes = query
         logger.debug(f"[get_notas_dict] Avaliacoes encontradas: {list(avaliacoes)}")
         notas_dict = {}
@@ -459,12 +634,12 @@ class TurmaAdmin(admin.ModelAdmin):
         success_count = 0
         error_messages = []
         data_fechamento = request.POST.get('data_fechamento', '').strip()
-        
+
         for aluno in alunos:
             for disciplina in disciplinas:
                 nota_key = f"nota_{aluno.id}_{disciplina.id}"
                 nota = request.POST.get(nota_key, '').strip()
-                
+
                 if nota:
                     try:
                         nota = float(nota.replace(',', '.'))
@@ -474,7 +649,7 @@ class TurmaAdmin(admin.ModelAdmin):
                                 f"Deve estar entre 0 e 10."
                             )
                             continue
-                            
+
                         Avaliacao.objects.update_or_create(
                             aluno=aluno,
                             disciplina=disciplina,
@@ -486,26 +661,26 @@ class TurmaAdmin(admin.ModelAdmin):
                             }
                         )
                         success_count += 1
-                        
+
                     except ValueError:
                         error_messages.append(
                             f"Nota inválida para {aluno.nome} em {disciplina.nome}. "
                             f"Deve ser um número."
                         )
-        
+
         if success_count > 0:
-            messages.success(request, 
-                f"Notas salvas com sucesso! ({success_count} atualizações)"
-            )
+            messages.success(request,
+                             f"Notas salvas com sucesso! ({success_count} atualizações)"
+                             )
         if error_messages:
-            messages.error(request, 
-                "Erros encontrados:<br>" + "<br>".join(error_messages),
-                extra_tags='safe'
-            )
+            messages.error(request,
+                           "Erros encontrados:<br>" + "<br>".join(error_messages),
+                           extra_tags='safe'
+                           )
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context['title'] = 'Crie uma turma nova, insira alunos em uma turma, edite ou exclua uma'
+        extra_context['title'] = 'Lista de Turmas'
         return super().changelist_view(request, extra_context=extra_context)
 
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
@@ -514,8 +689,9 @@ class TurmaAdmin(admin.ModelAdmin):
         formatted_data_fechamento = None
         if not data_fechamento:
             avaliacao = Avaliacao.objects.filter(turma=turma, bimestre=bimestre).first()
-            data_fechamento = avaliacao.data_fechamento.strftime('%Y-%m-%d') if avaliacao and avaliacao.data_fechamento else '2025-04-16'
-        
+            data_fechamento = avaliacao.data_fechamento.strftime(
+                '%Y-%m-%d') if avaliacao and avaliacao.data_fechamento else '2025-04-16'
+
         # Convert data_fechamento to DD/MM/YYYY format
         if data_fechamento:
             try:
@@ -525,7 +701,8 @@ class TurmaAdmin(admin.ModelAdmin):
                 formatted_data_fechamento = data_fechamento  # Fallback to raw value
 
         return context
-   
+
+
 #############################################################################
 #############################################################################
 #############################################################################
@@ -533,18 +710,48 @@ class TurmaAdmin(admin.ModelAdmin):
 @admin.register(Avaliacao)
 class AvaliacaoAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'link_avaliacoes')
-    
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('<int:turma_id>/avaliacao/', self.admin_site.admin_view(self.avaliacao_form_view), name='core_avaliacao_form'),
+            path('<int:turma_id>/avaliacao/', self.admin_site.admin_view(self.avaliacao_form_view),
+                 name='core_avaliacao_form'),
         ]
         return custom_urls + urls
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context['title'] = 'Clique em um card para ver as avaliações'
-        extra_context['turmas'] = Turma.objects.all()
+        escolas = Escola.objects.all().order_by('nome')
+        turmas = Turma.objects.all().select_related('escola')
+
+        # Filtros: escola, turma, ano
+        escola_id = request.GET.get('escola')
+        turma_id = request.GET.get('turma')
+        ano = request.GET.get('ano')
+
+        if escola_id and escola_id.isdigit():
+            turmas = turmas.filter(escola_id=escola_id)
+        if turma_id and turma_id.isdigit():
+            turmas = turmas.filter(id=turma_id)
+        if ano and ano.isdigit():
+            turmas = turmas.filter(ano=ano)
+
+        # Se quiser ordenar por ano/turma, etc.
+        turmas = turmas.order_by('ano', 'nome')
+
+        # Prepara lista de turmas para o select (opcional)
+        turmas_filter = Turma.objects.all().order_by('nome')
+
+        extra_context.update({
+            'title': 'Clique em um card para ver as avaliações',
+            'escolas': escolas,
+            'turmas': turmas,
+            'turmas_filter': turmas_filter,  # Para o filtro Turma
+            'ano_selecionado': ano,
+            'escola_selecionada': escola_id,
+            'turma_selecionada': turma_id,
+            'anos_disponiveis': Turma.objects.values_list('ano', flat=True).distinct().order_by('ano'),
+        })
         return super().changelist_view(request, extra_context=extra_context)
 
     def avaliacao_form_view(self, request, turma_id):
@@ -583,10 +790,12 @@ class AvaliacaoAdmin(admin.ModelAdmin):
         # Handle POST request (saving grades)
         if request.method == "POST":
             self._processar_notas(request, alunos, disciplinas, bimestre, turma)
-            return redirect(f"{reverse('admin:core_avaliacao_form', args=[turma.id])}?bimestre={bimestre.id}&data_fechamento={data_fechamento}")
+            return redirect(
+                f"{reverse('admin:core_avaliacao_form', args=[turma.id])}?bimestre={bimestre.id}&data_fechamento={data_fechamento}")
 
         # Handle GET request (displaying the form)
-        context = self._prepare_context(request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento)
+        context = self._prepare_context(request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict,
+                                        data_fechamento)
         return render(request, 'admin/core/avaliacao/avaliacao_form.html', context)
 
     def _get_bimestre(self, request, bimestres):
@@ -594,18 +803,18 @@ class AvaliacaoAdmin(admin.ModelAdmin):
         if bimestre_id:
             return get_object_or_404(Bimestre, id=bimestre_id)
         return bimestres.first()
-    
+
     def _get_notas_dict(self, turma, bimestre, data_fechamento=None):
         logger.debug(f"[get_notas_dict] Turma ID: {turma.id}, Nome: {turma.nome}")
         logger.debug(f"[get_notas_dict] Bimestre ID: {bimestre.id}, Nome: {bimestre.nome}")
         logger.debug(f"[get_notas_dict] Data Fechamento: {data_fechamento}")
         # Start with base query filtering by turma and bimestre
         query = Avaliacao.objects.filter(turma=turma, bimestre=bimestre)
-        
+
         # If data_fechamento is provided, add it to the filter
         if data_fechamento:
             query = query.filter(data_fechamento=data_fechamento)
-        
+
         avaliacoes = query
         logger.debug(f"[get_notas_dict] Avaliacoes encontradas: {list(avaliacoes)}")
         notas_dict = {}
@@ -615,7 +824,8 @@ class AvaliacaoAdmin(admin.ModelAdmin):
             if aluno_id not in notas_dict:
                 notas_dict[aluno_id] = {}
             notas_dict[aluno_id][disciplina_id] = str(av.nota) if av.nota is not None else ''
-            logger.debug(f"[get_notas_dict] Added: aluno {aluno_id}, disciplina {disciplina_id}, nota {notas_dict[aluno_id][disciplina_id]}")
+            logger.debug(
+                f"[get_notas_dict] Added: aluno {aluno_id}, disciplina {disciplina_id}, nota {notas_dict[aluno_id][disciplina_id]}")
         logger.debug(f"[get_notas_dict] Final notas_dict: {notas_dict}")
         return notas_dict
 
@@ -623,23 +833,23 @@ class AvaliacaoAdmin(admin.ModelAdmin):
         success_count = 0
         error_count = 0
         data_fechamento = request.POST.get('data_fechamento', '').strip()
-        
+
         for aluno in alunos:
             for disciplina in disciplinas:
                 nota_key = f"nota_{aluno.id}_{disciplina.id}"
                 nota = request.POST.get(nota_key, '').strip()
-                
+
                 if nota:
                     try:
                         nota = float(nota.replace(',', '.'))
                         if not (0 <= nota <= 10):
-                            messages.error(request, 
-                                f"Nota inválida para {aluno.nome} em {disciplina.nome}. "
-                                f"Deve estar entre 0 e 10."
-                            )
+                            messages.error(request,
+                                           f"Nota inválida para {aluno.nome} em {disciplina.nome}. "
+                                           f"Deve estar entre 0 e 10."
+                                           )
                             error_count += 1
                             continue
-                            
+
                         Avaliacao.objects.update_or_create(
                             aluno=aluno,
                             disciplina=disciplina,
@@ -651,22 +861,22 @@ class AvaliacaoAdmin(admin.ModelAdmin):
                             }
                         )
                         success_count += 1
-                        
+
                     except ValueError:
-                        messages.error(request, 
-                            f"Nota inválida para {aluno.nome} em {disciplina.nome}. "
-                            f"Deve ser um número."
-                        )
+                        messages.error(request,
+                                       f"Nota inválida para {aluno.nome} em {disciplina.nome}. "
+                                       f"Deve ser um número."
+                                       )
                         error_count += 1
-        
+
         if success_count > 0:
-            messages.success(request, 
-                f"Notas salvas com sucesso! ({success_count} atualizações)"
-            )
+            messages.success(request,
+                             f"Notas salvas com sucesso! ({success_count} atualizações)"
+                             )
         if error_count > 0:
-            messages.warning(request, 
-                f"{error_count} notas não puderam ser salvas devido a erros."
-            )
+            messages.warning(request,
+                             f"{error_count} notas não puderam ser salvas devido a erros."
+                             )
 
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
         context = self.admin_site.each_context(request)
@@ -674,8 +884,9 @@ class AvaliacaoAdmin(admin.ModelAdmin):
         formatted_data_fechamento = None
         if not data_fechamento:
             avaliacao = Avaliacao.objects.filter(turma=turma, bimestre=bimestre).first()
-            data_fechamento = avaliacao.data_fechamento.strftime('%Y-%m-%d') if avaliacao and avaliacao.data_fechamento else '2025-04-16'
-        
+            data_fechamento = avaliacao.data_fechamento.strftime(
+                '%Y-%m-%d') if avaliacao and avaliacao.data_fechamento else '2025-04-16'
+
         # Convert data_fechamento to DD/MM/YYYY format
         if data_fechamento:
             try:
@@ -683,7 +894,7 @@ class AvaliacaoAdmin(admin.ModelAdmin):
                 formatted_data_fechamento = date_obj.strftime('%d/%m/%Y')
             except ValueError:
                 formatted_data_fechamento = data_fechamento  # Fallback to raw value
-        
+
         context.update({
             'turma': turma,
             'alunos': alunos,
@@ -700,15 +911,18 @@ class AvaliacaoAdmin(admin.ModelAdmin):
     def link_avaliacoes(self, obj):
         url = reverse('admin:core_avaliacao_changelist')
         return format_html('<a href="{}">Gerenciar Avaliações</a>', url)
+
     link_avaliacoes.short_description = 'Ações'
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        
+
+
 class DiaLetivoForm(forms.ModelForm):
     class Meta:
         model = DiaLetivo
         fields = '__all__'
+
 
 #############################################################################
 #############################################################################
@@ -987,15 +1201,17 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
 
     calendario_link.short_description = 'Calendário'
 
+
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 @admin.register(Disciplina)
 class DisciplinaAdmin(admin.ModelAdmin):
-    list_display = ('nome',)  
-    #search_fields = ('nome',)
-    
+    list_display = ('nome',)
+
+    # search_fields = ('nome',)
+
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         disciplinas = Disciplina.objects.all()
@@ -1008,7 +1224,8 @@ class DisciplinaAdmin(admin.ModelAdmin):
         custom_urls = [
         ]
         return custom_urls + urls
-    
+
+
 #############################################################################
 #############################################################################
 #############################################################################
@@ -1035,7 +1252,7 @@ class BimestreAdmin(admin.ModelAdmin):
                 }
             bimestres_by_year[year]['bimestres'].append(bimestre)
             bimestres_by_year[year]['total_dias_letivos'] += bimestre.dias_letivo
-        
+
         # Ordenar os anos
         bimestres_by_year = dict(sorted(bimestres_by_year.items(), reverse=True))
 
@@ -1050,31 +1267,280 @@ class BimestreAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         return urls
-    
+
+
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
+from django.contrib import admin, messages
+from django.http import JsonResponse
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.db.models import Count, Max, Case, When, Value, IntegerField, CharField, Q
+
+from datetime import date, timedelta
+
+from .models import DiretoriaEnsino, Escola, Professor, Aluno, Frequencia, Turma
+
 @admin.register(DiretoriaEnsino)
 class DiretoriaEnsinoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'telefone', 'endereco')
-    #search_fields = ('nome',)
+    list_display = ('nome', 'telefone', 'endereco', 'report_link')
     ordering = ('nome',)
-    ##change_list_template = 'admin/core/diretoriaensino/change_list.html'
+    change_list_template = 'admin/core/diretoriaensino/change_list.html'
 
+    # --- Conjuntos de status (ajuste conforme seus choices) ---
+    PRESENTES = {'P', 'p', 'presente', 'Presente'}
+    AUSENTES = {'A', 'a', 'ausente', 'Ausente'}
+    JUSTIFICADAS = {'J', 'j', 'justificada', 'Justificada', 'AJ', 'aj'}  # se existir
+
+    def _get_periodo(self, request):
+        """Retorna (data_ini, data_fim) com fallback para últimos 30 dias."""
+        data_ini = request.GET.get('data_ini')
+        data_fim = request.GET.get('data_fim')
+        if data_ini and data_fim:
+            return data_ini, data_fim
+        hoje = date.today()
+        return (hoje - timedelta(days=30)).strftime('%Y-%m-%d'), hoje.strftime('%Y-%m-%d')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('reports/', self.admin_site.admin_view(self.reports_view),
+                 name='core_diretoriaensino_reports'),
+            path('dashboard/', self.admin_site.admin_view(self.dashboard_view)),
+            path('schools-chart/', self.admin_site.admin_view(self.schools_chart_view),
+                 name='core_diretoriaensino_schools_chart'),
+            path('dashboard-detalhado/', self.admin_site.admin_view(self.dashboard_detalhado_view),
+                 name='core_diretoriaensino_dashboard_detalhado'),
+        ]
+        return custom_urls + urls
+
+    # ----------------- HELPERS -----------------
+    def base_frequencias_filtradas(self, request):
+        data_ini, data_fim = self._get_periodo(request)
+        escola_id = request.GET.get('escola_id')
+        turma_id = request.GET.get('turma_id')
+        professor_id = request.GET.get('professor_id')
+
+        qs = Frequencia.objects.filter(data__range=[data_ini, data_fim])
+
+        if escola_id and escola_id != 'all':
+            qs = qs.filter(turma__escola_id=escola_id)
+        if turma_id:
+            qs = qs.filter(turma_id=turma_id)
+        if professor_id:
+            qs = qs.filter(turma__professores__id=professor_id)
+
+        return qs
+
+    def schools_chart_view(self, request):
+        data_ini = request.GET.get('data_ini')
+        data_fim = request.GET.get('data_fim')
+        escola_id = request.GET.get('escola_id')
+
+        frequencias = Frequencia.objects.all()
+        if data_ini and data_fim:
+            frequencias = frequencias.filter(data__range=[data_ini, data_fim])
+        if escola_id:
+            frequencias = frequencias.filter(turma__escola__id=escola_id)
+
+        labels, valores = [], []
+        qs_escolas = Escola.objects.all()
+        for escola in qs_escolas:
+            if escola_id and str(escola.id) != str(escola_id):
+                continue
+            # total de presenças no período por escola (ajuste conforme sua métrica)
+            total = frequencias.filter(turma__escola=escola, status='presente').count()
+            labels.append(escola.nome)
+            valores.append(total)
+
+        data = {
+            'labels': labels,
+            'datasets': [{
+                'label': 'Presenças no Período',
+                'data': valores,
+            }],
+            'data': valores,  # opcional, para facilitar no front
+        }
+        return JsonResponse(data)
+
+    def consolida_por_aluno_dia(self, qs):
+        """
+        Consolida um 'marcador' por (aluno, data):
+        - 'A' se houve qualquer ausência no dia
+        - senão 'P' se houve presença
+        - senão 'NA'
+        Também cria 'marcador2' opcional 'AJ' para ausência justificada.
+        """
+        agrupado = (
+            qs.values('aluno_id', 'data')
+              .annotate(
+                  tem_ausencia=Max(
+                      Case(When(status__in=self.AUSENTES, then=1),
+                           default=0, output_field=IntegerField())
+                  ),
+                  tem_presenca=Max(
+                      Case(When(status__in=self.PRESENTES, then=1),
+                           default=0, output_field=IntegerField())
+                  ),
+                  tem_just=Max(
+                      Case(When(status__in=self.JUSTIFICADAS, then=1),
+                           default=0, output_field=IntegerField())
+                  ),
+              )
+              .annotate(
+                  marcador=Case(
+                      When(tem_ausencia__gt=0, then=Value('A')),
+                      When(tem_presenca__gt=0, then=Value('P')),
+                      default=Value('NA'),
+                      output_field=CharField()
+                  ),
+                  marcador2=Case(
+                      When(tem_ausencia__gt=0, tem_just__gt=0, then=Value('AJ')),
+                      default=Value(None),
+                      output_field=CharField()
+                  ),
+              )
+        )
+        return agrupado
+
+    # ----------------- VIEWS -----------------
+    def schools_chart_view(self, request):
+        """
+        Dataset 0: Alunos por Escola  (sempre populado)
+        Dataset 1: Presenças (aluno-dia) no período (opcional)
+        """
+        data_ini, data_fim = self._get_periodo(request)
+        escola_id = request.GET.get('escola_id')
+
+        # Escolas a considerar
+        escolas_qs = Escola.objects.all().order_by('nome')
+        if escola_id and escola_id != 'all':
+            escolas_qs = escolas_qs.filter(id=escola_id)
+
+        # --- Alunos por escola (distinct via M2M turmas) ---
+        alunos_por_escola = (
+            Aluno.objects
+            .filter(turmas__escola__in=escolas_qs)
+            .values('turmas__escola__id', 'turmas__escola__nome')
+            .distinct()
+            .values('turmas__escola__id', 'turmas__escola__nome')
+            .annotate(qt=Count('id'))
+        )
+        # Mapeia id -> contagem de alunos
+        alunos_map = {r['turmas__escola__id']: r['qt'] for r in alunos_por_escola}
+
+        # --- Presenças por escola no período (aluno-dia, consolidado) ---
+        qs_freq = Frequencia.objects.filter(data__range=[data_ini, data_fim])
+        if escola_id and escola_id != 'all':
+            qs_freq = qs_freq.filter(turma__escola_id=escola_id)
+
+        # consolida por aluno-dia e mantém apenas 'P'
+        agrupado = (
+            qs_freq.values('aluno_id', 'data',
+                           'turma__escola__id', 'turma__escola__nome')
+            .annotate(
+                tem_presenca=Max(
+                    Case(When(status__in=self.PRESENTES, then=1),
+                         default=0, output_field=IntegerField())
+                )
+            )
+            .filter(tem_presenca__gt=0)
+            .distinct()
+            .values('turma__escola__id', 'turma__escola__nome')
+            .annotate(qt=Count('turma__escola__id'))
+        )
+        presentes_map = {r['turma__escola__id']: r['qt'] for r in agrupado}
+
+        # --- Monta labels e séries na mesma ordem das escolas ---
+        labels = [e.nome for e in escolas_qs]
+        serie_alunos = [alunos_map.get(e.id, 0) for e in escolas_qs]
+        serie_presencas = [presentes_map.get(e.id, 0) for e in escolas_qs]
+
+        return JsonResponse({
+            'labels': labels,
+            'datasets': [
+                {'label': 'Alunos por Escola', 'data': serie_alunos},
+                {'label': 'Presenças (aluno-dia) no período', 'data': serie_presencas},
+            ],
+            # compat com seu JS atual:
+            'data': serie_alunos,
+        })
+
+    def dashboard_detalhado_view(self, request):
+        qs = self.base_frequencias_filtradas(request)
+
+        filtro_presente = Q(status__in=self.PRESENTES)
+        filtro_ausente = Q(status__in=self.AUSENTES)
+
+        total_presente = qs.filter(filtro_presente).count()
+        total_ausente = qs.filter(filtro_ausente).count()
+
+        professores_com_chamada = Professor.objects.filter(turmas__frequencia__in=qs).distinct()
+        professores_sem_chamada = Professor.objects.exclude(id__in=professores_com_chamada.values('id'))
+
+        data = {
+            'professores_com_chamada': list(professores_com_chamada.values('id', 'nome')),
+            'professores_sem_chamada': list(professores_sem_chamada.values('id', 'nome')),
+            'total_presente': total_presente,
+            'total_ausente': total_ausente,
+        }
+        return JsonResponse(data)
+
+    def dashboard_view(self, request):
+        context = {
+            **self.admin_site.each_context(request),
+            'total_escolas': Escola.objects.count(),
+            'total_alunos': Aluno.objects.count(),
+            'total_professores': Professor.objects.count(),
+            'title': 'Dashboard Administrativo',
+        }
+        return TemplateResponse(request, 'admin/core/dashboard.html', context)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context['title'] = 'Adicione uma nova Diretoria ou clique em uma para modificar'
+        extra_context.update({
+            'title': 'Visão geral do município',
+            'departamentos': DiretoriaEnsino.objects.all(),
+            'total_escolas': Escola.objects.count(),
+            'total_alunos': Aluno.objects.count(),
+            'total_professores': Professor.objects.count(),
+            'escolas': Escola.objects.all(),
+            # defaults para o template até o fetch preencher
+            'alunos_presentes': 0,
+            'alunos_ausentes': 0,
+            'professores_com_chamada': 0,
+            # compat admin
+            'opts': self.model._meta,
+            'app_label': self.model._meta.app_label,
+        })
         return super().changelist_view(request, extra_context=extra_context)
-    
-    # Opcional: desative ações em massa se não forem necessárias
-    def has_add_permission(self, request):
-        return True
-    
-    def has_delete_permission(self, request, obj=None):
-        return True
-    
+
+    def reports_view(self, request):
+        schools = Escola.objects.all()
+        students_by_school = [
+            {
+                'name': school.nome,
+                'count': Aluno.objects.filter(turmas__escola=school).distinct().count()
+            }
+            for school in schools
+        ]
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Relatórios da Diretoria de Ensino',
+            'schools': schools,
+            'students_by_school': students_by_school,
+            'opts': self.model._meta,
+        }
+        return TemplateResponse(request, 'admin/core/diretoriaensino/reports.html', context)
+
+    def report_link(self, obj):
+        url = reverse('admin:core_diretoriaensino_reports')
+        return format_html('<a class="button" href="{}">Ver Relatórios</a>', url)
+    report_link.short_description = 'Relatórios'
+
 #############################################################################
 #############################################################################
 #############################################################################
@@ -1082,20 +1548,22 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
 @admin.register(Diretor)
 class DiretorAdmin(admin.ModelAdmin):
     list_display = ("nome", "telefone")
-    #search_fields = ("nome", "cpf")
-    #ordering = ("nome",)
+
+    # search_fields = ("nome", "cpf")
+    # ordering = ("nome",)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo Diretor ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
-    
+
     # Opcional: desative ações em massa se não forem necessárias
     def has_add_permission(self, request):
         return True
-    
+
     def has_delete_permission(self, request, obj=None):
         return True
+
 
 #############################################################################
 #############################################################################
@@ -1103,7 +1571,7 @@ class DiretorAdmin(admin.ModelAdmin):
 #############################################################################
 class EscolaForm(forms.ModelForm):
     """Formulário personalizado para o modelo Escola."""
-    
+
     class Meta:
         model = Escola
         fields = '__all__'
@@ -1115,12 +1583,12 @@ class EscolaForm(forms.ModelForm):
             'cnpj': 'Formato: 00.000.000/0000-00',
             'cep': 'Formato: 00000-000'
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_field_attributes()
         self.set_required_fields()
-    
+
     def set_field_attributes(self):
         """Configura atributos comuns para os campos."""
         for field in self.fields:
@@ -1128,14 +1596,14 @@ class EscolaForm(forms.ModelForm):
                 self.fields[field].widget.attrs.update({
                     'class': 'form-control'
                 })
-    
+
     def set_required_fields(self):
         """Define campos obrigatórios."""
         required_fields = ['nome', 'diretoria_ensino', 'cidade', 'estado']
         for field_name in required_fields:
             if field_name in self.fields:
                 self.fields[field_name].required = True
-    
+
     def clean_cnpj(self):
         """Validação customizada para o CNPJ."""
         cnpj = self.cleaned_data.get('cnpj')
@@ -1153,11 +1621,19 @@ class EscolaForm(forms.ModelForm):
 @admin.register(Escola)
 class EscolaAdmin(admin.ModelAdmin):
     list_display = ('nome',)  # Adjust based on your fields
-    #search_fields = ('nome',)
+    list_filter = ('ativa',)
+
+    # search_fields = ('nome',)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
+
         escolas = Escola.objects.all()
+
+        ativa = request.GET.get('ativa')
+        if ativa in ['1', '0']:
+            escolas = escolas.filter(ativa=bool(int(ativa)))
+
         extra_context['title'] = 'Clique no editor do card para visualizar ou modificar'
         extra_context['escolas'] = escolas
         return super().changelist_view(request, extra_context=extra_context)
@@ -1188,12 +1664,13 @@ class EscolaAdmin(admin.ModelAdmin):
             return redirect('admin:core_escola_changelist')
 
         return redirect('admin:core_escola_changelist')
-    
+
+
 class ProfessorAdminForm(forms.ModelForm):
     class Meta:
         model = Professor
         fields = [
-            'nome', 'cpf', 'data_nascimento', 'sexo', 
+            'nome', 'cpf', 'data_nascimento', 'sexo',
             'endereco', 'telefone', 'disciplinas', 'turmas'
         ]
         widgets = {
@@ -1216,7 +1693,12 @@ class ProfessorAdmin(admin.ModelAdmin):
     search_fields = ("nome", "cpf")
     ordering = ("nome",)
     change_list_template = 'admin/core/professor/change_list.html'
-    
+    list_filter = [
+        'turmas',
+        'turmas__escola',
+        'disciplinas',
+    ]
+
     class Media:
         css = {
             'all': ('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',)
@@ -1226,20 +1708,22 @@ class ProfessorAdmin(admin.ModelAdmin):
             'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
             '/static/js/admin_select2.js',
         )
-    
+
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
-        #extra_context['total_professores'] = self.get_queryset(request).count()
-        extra_context['title'] = "Adicione, edite ou exclua um professor"  # Título personalizado
-        return super().changelist_view(request, extra_context=extra_context)
-    
+        extra_context['escolas'] = Escola.objects.all()
+        extra_context['turmas'] = Turma.objects.all()
+        extra_context['disciplinas'] = Disciplina.objects.all()
+        extra_context['title'] = "Adicione, edite ou exclua um professor"
+        return super().changelist_view(request, extra_context)
+
     def get_disciplinas(self, obj):
         return ", ".join([disciplina.nome for disciplina in obj.disciplinas.all()])
+
     get_disciplinas.short_description = 'Disciplinas'
 
     def get_turmas(self, obj):
         return ", ".join([turma.nome for turma in obj.turmas.all()])
+
     get_turmas.short_description = 'Turmas'
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related('turmas', 'disciplinas')
