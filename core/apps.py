@@ -1,3 +1,4 @@
+# core/apps.py
 from django.apps import AppConfig
 
 class CoreConfig(AppConfig):
@@ -6,5 +7,4 @@ class CoreConfig(AppConfig):
     verbose_name = 'DIÁRIO DE CLASSE DIGITAL '
 
     def ready(self):
-        import core.signals 
-
+        import core.signals

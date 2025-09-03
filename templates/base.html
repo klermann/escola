@@ -1,16 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sistema Escolar{% endblock %}</title>
+
+    <!-- Meta tags PWA -->
+    <link rel="manifest" href="{% url 'manifest' %}">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sistema Escolar">
+    <link rel="apple-touch-icon" href="/static/pwa/icons/icon-192.png">
+
+    <!-- CSS e outros recursos -->
+    {% load static %}
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <div>
         {% if user.is_authenticated %}
             <p>Olá, {{ user.nome }}! (<a href="{% url 'logout' %}">Sair</a>)</p>
         {% else %}
-            <a href="{% url 'login' %}">Login</a> | 
+            <a href="{% url 'login' %}">Login</a> |
         {% endif %}
     </div>
+
     {% block content %}{% endblock %}
+
+    <!-- Script PWA -->
+    <script defer src="/static/pwa/pwa-register.js"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

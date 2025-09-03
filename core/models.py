@@ -264,19 +264,38 @@ class Usuario(models.Model):
 #############################################################################
 #############################################################################
 #############################################################################
-class Diretor(Usuario):
-    """
-    Modelo que representa um Diretor escolar.
-    Herda de Usuario e possui um relacionamento OneToOne com Escola.
-    """
+# --- após class Usuario(models.Model) ---
 
-    def __str__(self):
-        return f"Diretor: {self.get_full_name()}" if hasattr(self, 'get_full_name') else f"Diretor: {self.nome}"
+class Diretor(Usuario):
+    inicio_no_cargo = models.DateField(null=True, blank=True, verbose_name="Início no cargo")
+    efetivo = models.BooleanField(default=False, verbose_name="Efetivo")
 
     class Meta:
         verbose_name = "Diretor"
         verbose_name_plural = "Diretores"
         ordering = ['nome']
+
+    def __str__(self):
+        return f"Diretor: {self.nome}"
+
+class DiretorFormacao(models.Model):
+    diretor = models.ForeignKey(Diretor, on_delete=models.CASCADE, related_name="formacoes")
+    titulo = models.CharField(max_length=120, verbose_name="Formação")
+    instituicao = models.CharField(max_length=120, blank=True, null=True)
+    ano = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return self.titulo
+
+class DiretorCurso(models.Model):
+    diretor = models.ForeignKey(Diretor, on_delete=models.CASCADE, related_name="cursos")
+    nome = models.CharField(max_length=120, verbose_name="Curso")
+    instituicao = models.CharField(max_length=120, blank=True, null=True)
+    carga_horaria = models.PositiveIntegerField(blank=True, null=True, verbose_name="Carga horária (h)")
+    ano = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return self.nome
 
 
 #############################################################################
@@ -291,39 +310,142 @@ class Calendario(models.Model):
     class Meta:
         unique_together = ('mes', 'dia')
 
+# perto dos validadores já existentes
+CNPJ_REGEX = RegexValidator(
+    regex=r'^\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}$',
+    message="CNPJ deve estar no formato 00.000.000/0000-00 ou apenas dígitos."
+)
+
 class Escola(models.Model):
     nome = models.CharField(max_length=150, verbose_name="Nome")
     ativa = models.BooleanField(default=True, verbose_name="Ativa")
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
     endereco = models.CharField(max_length=255, verbose_name="Endereço")
-    diretoria_ensino = models.ForeignKey(
-        DiretoriaEnsino,
-        on_delete=models.PROTECT,
-        verbose_name="Diretoria Regional de Ensino"
-    )
-    diretor = models.ForeignKey(
-        Diretor,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Diretor Responsável"
-    )
+    diretoria_ensino = models.ForeignKey(DiretoriaEnsino, on_delete=models.PROTECT, verbose_name="Diretoria Regional de Ensino")
+    diretor = models.ForeignKey(Diretor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Diretor Responsável")
+
+    # — novos —
+    cnpj = models.CharField(max_length=18, blank=True, null=True, validators=[CNPJ_REGEX], verbose_name="CNPJ")
+    cod_cie = models.CharField(max_length=20, blank=True, null=True, verbose_name="Código CIE")
+    apm_ativa = models.BooleanField(default=False, verbose_name="APM ativa?")
+    ppp_arquivo = models.FileField(upload_to="ppp/", blank=True, null=True, verbose_name="Projeto Político-Pedagógico (PDF)")
 
     def __str__(self):
         return self.nome
 
+
+class EscolaEstruturaFisica(models.Model):
+    """One-to-One para manter a tela limpa e extensível."""
+    escola = models.OneToOneField(Escola, on_delete=models.CASCADE, related_name="estrutura")
+
+    qtd_salas = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Salas (quantidade)")
+    tem_cozinha = models.BooleanField(default=False, verbose_name="Cozinha")
+    tem_refeitorio = models.BooleanField(default=False, verbose_name="Refeitório")
+    area_lazer_m2 = models.PositiveIntegerField(blank=True, null=True, verbose_name="Área de lazer (m²)")
+    possui_alimentacao_escolar = models.BooleanField(default=False, verbose_name="Alimentação escolar")
+    qtd_quadras = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Quadras poliesportivas")
+
+    class Meta:
+        verbose_name = "Estrutura física"
+        verbose_name_plural = "Estrutura física"
+
+    def __str__(self):
+        return f"Estrutura de {self.escola.nome}"
+
+class EscolaFuncionarios(models.Model):
+    """Quadro básico de funcionários da escola."""
+    escola = models.OneToOneField(Escola, on_delete=models.CASCADE, related_name="funcionarios")
+
+    # OBS: o diretor já existe em Escola.diretor; aqui ficam os demais cargos e quantitativos.
+    vice_diretor = models.CharField(max_length=120, blank=True, null=True, verbose_name="Vice-diretor(a)")
+    coordenador = models.CharField(max_length=120, blank=True, null=True, verbose_name="Coordenador(a)")
+    secretario = models.CharField(max_length=120, blank=True, null=True, verbose_name="Secretário(a)")
+
+    qtd_professores = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Quantidade de professores")
+    qtd_alunos = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Quantidade de alunos")
+
+    qtd_cozinheiras = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Cozinheira(s)")
+    qtd_auxiliares_limpeza = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Auxiliar(es) de limpeza")
+
+    class Meta:
+        verbose_name = "Funcionários"
+        verbose_name_plural = "Funcionários"
+
+    def __str__(self):
+        return f"Funcionários de {self.escola.nome}"
 
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 class Turma(models.Model):
+    TIPO_ENSINO_CHOICES = [
+        ("EI", "Educação Infantil"),
+        ("EF1", "Ensino Fundamental – Anos Iniciais"),
+        ("EF2", "Ensino Fundamental – Anos Finais"),
+        ("EM", "Ensino Médio"),
+    ]
+
     nome = models.CharField(max_length=100)
     escola = models.ForeignKey(Escola, on_delete=models.CASCADE, related_name='turmas')
-    ano = models.PositiveIntegerField(verbose_name='Ano', help_text='Ano letivo da turma')
+    ano = models.PositiveIntegerField(verbose_name='Ano')
+    codigo = models.CharField(max_length=20, default="")
+    tipo_ensino = models.CharField(
+        max_length=4,
+        choices=TIPO_ENSINO_CHOICES,
+        default="EF1"
+    )
+    sala_identificacao = models.CharField(
+        max_length=50,
+        default="S/N",
+        verbose_name="Sala (nº/identificação)"
+    )
+    aee = models.BooleanField(default=False, verbose_name="AEE")
+    aee_observacoes = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Obs. AEE"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["escola", "ano", "codigo"], name="uq_turma_escola_ano_codigo"),
+        ]
 
     def __str__(self):
         return f"{self.nome} - {self.escola.nome} ({self.ano})"
+
+class TurmaHorario(models.Model):
+    DIAS = [
+        (0, "Segunda"),
+        (1, "Terça"),
+        (2, "Quarta"),
+        (3, "Quinta"),
+        (4, "Sexta"),
+        (5, "Sábado"),
+        (6, "Domingo"),
+    ]
+
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name="horarios")
+    dia_semana = models.IntegerField(choices=DIAS)
+    horario_inicio = models.TimeField()
+    horario_fim = models.TimeField()
+
+    class Meta:
+        verbose_name = "Funcionamento da Turma"
+        verbose_name_plural = "Funcionamento da Turma"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(horario_inicio__lt=models.F("horario_fim")),
+                name="chk_turma_horario_intervalo_valido"
+            ),
+            models.UniqueConstraint(fields=["turma", "dia_semana"], name="uq_turma_dia_unico"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_dia_semana_display()} {self.horario_inicio}-{self.horario_fim}"
+
 
 #############################################################################
 #############################################################################
@@ -377,24 +499,28 @@ class Aluno(models.Model):
         return self.nome
 
 class Disciplina(models.Model):
+    AREA_CONHECIMENTO_CHOICES = [
+        ("LINGUAGENS", "Linguagens"),
+        ("MATEMÁTICA", "Matemática"),
+        ("CIÊNCIAS HUMANAS", "Ciências Humanas"),
+        ("CIÊNCIA DA NATUREZA", "Ciência da Natureza"),
+    ]
+
     nome = models.CharField(max_length=50, unique=True)
+    area_conhecimento = models.CharField(
+        max_length=30,
+        choices=AREA_CONHECIMENTO_CHOICES,
+        verbose_name="Área do conhecimento",
+        default="LINGUAGENS"  # <-- valor inicial válido
+    )
+    carga_horaria = models.PositiveIntegerField(
+        verbose_name="Carga horária (horas)",
+        default=0  # <-- inteiro simples
+    )
 
     def __str__(self):
-        return self.nome
+        return f"{self.nome} ({self.area_conhecimento})"
 
-class DisciplinaForm(forms.ModelForm):
-    class Meta:
-        model = Disciplina
-        fields = ['nome']
-        widgets = {
-            'nome': forms.TextInput(attrs={
-                'placeholder': 'Ex: Matemática, Português, História...',
-                'class': 'form-control'
-            })
-        }
-        help_texts = {
-            'nome': 'Digite o nome completo da disciplina'
-        }
 
 class Bimestre(models.Model):
     nome = models.CharField(max_length=50)
@@ -522,29 +648,31 @@ class Frequencia(models.Model):
         ('nao_letivo', 'Dia Não Letivo'),
     ]
 
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
+    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, db_index=True)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, db_index=True)
+
     data = models.DateField(verbose_name='Data')
+    registro = models.PositiveSmallIntegerField(
+        verbose_name="Registro/Aula do dia",
+        default=1,
+        validators=[MinValueValidator(1)],
+        help_text="Número da aula dentro do dia (1ª, 2ª, 3ª...)."
+    )
     status = models.CharField(max_length=20, choices=PRESENCA_CHOICES)
     disciplina = models.ForeignKey(Disciplina, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
-        unique_together = ('aluno', 'data', 'disciplina')  # Um aluno só pode ter um registro por dia por disciplina
+        constraints = [
+            models.UniqueConstraint(
+                fields=['aluno', 'data', 'disciplina', 'registro'],
+                name='unique_frequencia_aluno_dia_disciplina_registro'
+            )
+        ]
         verbose_name = 'Frequência'
         verbose_name_plural = 'Frequências'
 
     def __str__(self):
-        return f"{self.aluno.nome} - {self.data} - {self.get_status_display()}"
-
-    def save(self, *args, **kwargs):
-        # Verifica se o aluno está matriculado na turma
-        if not self.turma_id or not self.aluno.turmas.filter(id=self.turma_id).exists():
-            raise ValidationError("O aluno não está matriculado nesta turma")
-
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.aluno.nome} - {self.data} - {self.get_status_display()}"
+        return f"{self.aluno.nome} - {self.data} - Aula {self.registro} - {self.get_status_display()}"
 
 class PeriodoLetivo(models.Model):
     TIPO_PERIODO = [
@@ -642,6 +770,39 @@ class DiaLetivo(models.Model):
         return f"{self.data.strftime('%d/%m/%Y')} - {self.get_status_display()}"
 
 
+class ProfessorFormacao(models.Model):
+    formacao = models.CharField(max_length=150, verbose_name="Formação")
+    professor = models.ForeignKey(
+        'Professor',
+        on_delete=models.CASCADE,
+        related_name='formacoes'
+    )
+
+    class Meta:
+        verbose_name = 'Formação'
+        verbose_name_plural = 'Formações'
+
+    def __str__(self):
+        return self.formacao
+
+
+
+class ProfessorCurso(models.Model):
+    professor = models.ForeignKey(
+        "Professor",
+        on_delete=models.CASCADE,
+        related_name="cursos"
+    )
+    nome = models.CharField(max_length=150, verbose_name="Curso de Aperfeiçoamento")
+
+    def __str__(self):
+        return f"{self.nome} ({self.professor.nome})"
+
+    class Meta:
+        verbose_name = "Curso de Aperfeiçoamento"
+        verbose_name_plural = "Cursos de Aperfeiçoamento"
+
+
 class Professor(models.Model):
     # Opções para carga horária
     CARGA_HORARIA_CHOICES = [
@@ -699,5 +860,4 @@ class Aviso(models.Model):
 
 class Boletim(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE)
-    # ... outros campos
 

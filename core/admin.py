@@ -1,28 +1,20 @@
 # core/admin.py
-from django.contrib import admin, messages
 from datetime import datetime, date, timedelta
-
 from django.core.exceptions import ValidationError
-from django.http import JsonResponse
 from django.utils.html import format_html
-from django.template.response import TemplateResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Diretor, Escola, Professor, Turma, Aluno, Disciplina, Bimestre, Avaliacao, Frequencia, \
-    PeriodoLetivo, DiaLetivo, DiretoriaEnsino
-from django.urls import reverse, path
 from django.utils.dateparse import parse_date
 import logging
+from .models import Diretor, Escola, Professor, Turma, Aluno, Disciplina, Bimestre, Avaliacao, Frequencia, \
+    PeriodoLetivo, DiaLetivo, DiretoriaEnsino, EscolaEstruturaFisica, EscolaFuncionarios, TurmaHorario, \
+    ProfessorFormacao, ProfessorCurso
 from django import forms
-from django.db.models import Max
-from django.db.models import Q
 from calendar import monthrange
 from collections import defaultdict
 from django.contrib.admin import SimpleListFilter
-from django.db.models import Count
-from django.db.models import Case, When, Value, IntegerField, CharField, Max
-# core/admin.py
-
+from .models import Diretor, DiretorFormacao, DiretorCurso
 from django.contrib import admin
+from django.contrib import messages
 from .models import (
     Aluno, AlunoPessoal, AlunoResponsaveis, AlunoContato,
     AlunoEscolar, AlunoComplementar
@@ -37,6 +29,49 @@ logger = logging.getLogger(__name__)
 PRESENTES = ['P', 'presente']
 AUSENTES  = ['A', 'ausente']
 JUSTIFICADAS = ['J', 'justificada']
+
+from django.contrib.admin import AdminSite
+
+MODEL_ORDER = [
+    "core.Aluno",
+    "core.Professor",
+    "core.Diretor",
+    "core.Turma",
+    "core.Disciplina",
+    "core.Escola",
+    "core.Frequencia",
+    "core.Avaliacao",
+    "core.Bimestre",
+    "core.PeriodoLetivo",
+    "core.DiretoriaEnsino",
+]
+
+
+APP_ORDER = ["core", "auth", "admin"]
+
+def _mkey(label: str):
+    try: return MODEL_ORDER.index(label)
+    except ValueError: return len(MODEL_ORDER) + 1
+
+class MyAdminSite(AdminSite):
+    site_header = "DIÁRIO DE CLASSE DIGITAL"
+
+    def get_app_list(self, request, app_label=None):
+        # Se você tinha lógica própria, mantenha aqui.
+        # Exemplo básico, delegando ao Django e (opcionalmente) reordenando:
+        apps = super().get_app_list(request, app_label=app_label)
+
+        # ordena modelos dentro de cada app
+        for app in apps:
+            app["models"].sort(
+                key=lambda m: _mkey(f'{m["app_label"]}.{m["object_name"]}')
+            )
+
+        # só reordena apps quando estiver na visão geral (sem app_label)
+        if app_label is None:
+            apps.sort(key=lambda a: APP_ORDER.index(a["app_label"]) if a["app_label"] in APP_ORDER else 999)
+
+        return apps
 
 class FrequenciaForm(forms.ModelForm):
     class Meta:
@@ -127,7 +162,6 @@ class AlunoAdmin(admin.ModelAdmin):
     filter_horizontal = ('turmas',)
     change_form_template = 'admin/core/aluno/change_form_tabs.html'
 
-    # 1ª tela: dados mínimos do Aluno (nome/ra/data/ativo/quilombola/turmas)
     fieldsets = (
         ('Identificação do Aluno', {
             'fields': ('nome', 'ra', 'data_nascimento', 'ativo', 'quilombola', 'turmas')
@@ -142,16 +176,35 @@ class AlunoAdmin(admin.ModelAdmin):
         AlunoComplementarInline
     ]
 
-    def turmas_list(self, obj):
-        return ", ".join([t.nome for t in obj.turmas.all()])
-    turmas_list.short_description = 'Turmas'
-
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo aluno ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
 
-    # Pós-salvar: cria automaticamente blocos OneToOne vazios para aparecerem como "abas"
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Alunos.")
+            return redirect("admin:core_aluno_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Alunos.")
+            return redirect("admin:core_aluno_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Alunos.")
+            return redirect("admin:core_aluno_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- CAMPOS CUSTOM -----------------
+    def turmas_list(self, obj):
+        return ", ".join([t.nome for t in obj.turmas.all()])
+    turmas_list.short_description = 'Turmas'
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         # Garante que os inlines existam após inserir o aluno
@@ -161,6 +214,25 @@ class AlunoAdmin(admin.ModelAdmin):
         AlunoEscolar.objects.get_or_create(aluno=obj, defaults={'numero_matricula': f"M-{obj.id:06d}", 'ano_serie_atual': ''})
         AlunoComplementar.objects.get_or_create(aluno=obj)
 
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_aluno")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_aluno"):
+            messages.error(request, "Você não tem permissão para visualizar Alunos.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_aluno")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_aluno")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_aluno")
+
 
 #############################################################################
 #############################################################################
@@ -169,14 +241,14 @@ class AlunoAdmin(admin.ModelAdmin):
 @admin.register(Frequencia)
 class FrequenciaAdmin(admin.ModelAdmin):
     form = FrequenciaForm
-    list_display = ('aluno', 'data', 'status_display', 'disciplina', 'frequencia_link', 'turma')
-    list_filter = ('turma', 'disciplina', 'status', 'data')
+    list_display = ('aluno', 'data', 'registro', 'status_display', 'disciplina', 'frequencia_link', 'turma')
+    list_filter = ('turma', 'disciplina', 'status', 'data', 'registro')
     search_fields = ('aluno__nome', 'turma__nome', 'disciplina__nome')
     date_hierarchy = 'data'
 
     fieldsets = (
         (None, {
-            'fields': ('aluno', 'turma', 'data', 'disciplina', 'status')
+            'fields': ('aluno', 'turma', 'data', 'registro', 'disciplina', 'status')
         }),
     )
 
@@ -254,6 +326,7 @@ class FrequenciaAdmin(admin.ModelAdmin):
         error_messages = []
         logger.error(f"Data recebida para processamento: ({date.today().year})")
         today = date.today()
+
         # Valida a data antes de processar
         try:
             parsed_date = parse_date(data)
@@ -311,6 +384,16 @@ class FrequenciaAdmin(admin.ModelAdmin):
                     error_messages.append(error_msg)
                     logger.error(f"{error_msg}: {str(e)}", exc_info=True)
 
+
+        registro = request.POST.get('registro', 1)
+        Frequencia.objects.update_or_create(
+            aluno=aluno,
+            turma=turma,
+            data=data,
+            registro=registro,
+            defaults=defaults
+        )
+
         # Feedback para o usuário
         if success_count > 0:
             messages.success(
@@ -361,6 +444,7 @@ class FrequenciaAdmin(admin.ModelAdmin):
 
     frequencia_link.short_description = 'Frequência'
 
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         context = {
             **self.admin_site.each_context(request),
@@ -369,15 +453,58 @@ class FrequenciaAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
             'app_label': self.model._meta.app_label,
         }
-
         if extra_context:
             context.update(extra_context)
+        return TemplateResponse(request, 'admin/core/frequencia/turma_list.html', context)
 
-        return TemplateResponse(
-            request,
-            'admin/core/frequencia/turma_list.html',
-            context
-        )
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Frequências.")
+            return redirect("admin:core_frequencia_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Frequências.")
+            return redirect("admin:core_frequencia_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Frequências.")
+            return redirect("admin:core_frequencia_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- COLUNAS CUSTOM -----------------
+    def status_display(self, obj):
+        return obj.get_status_display()
+
+    status_display.short_description = 'Status'
+
+    def frequencia_link(self, obj):
+        url = reverse('admin:frequencia_form', args=[obj.id])
+        return format_html('<a class="button" href="{}">Registrar Frequência</a>', url)
+
+    frequencia_link.short_description = 'Frequência'
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_frequencia")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_frequencia"):
+            messages.error(request, "Você não tem permissão para visualizar Frequências.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_frequencia")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_frequencia")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_frequencia")
 
 
 #############################################################################
@@ -447,16 +574,28 @@ class TurmaNomeFilter(SimpleListFilter):
             return queryset.filter(id=self.value())
         return queryset
 
+
+class TurmaHorarioInline(admin.TabularInline):
+    model = TurmaHorario
+    extra = 2
+    fields = ("dia_semana", "horario_inicio", "horario_fim")
+    ordering = ("dia_semana",)
+
 @admin.register(Turma)
 class TurmaAdmin(admin.ModelAdmin):
-    list_filter = (
-        'ano',
-        'escola',
-        'professores',
-        NumeroAlunosFilter,
+    list_filter = ('ano', 'escola', 'tipo_ensino', 'aee')
+    list_display = ('__str__', 'codigo', 'tipo_ensino', 'aee', 'avaliacao_link', 'alunos_link')
+    search_fields = ('nome', 'codigo', 'escola__nome')
+    inlines = [TurmaHorarioInline]
+
+    fieldsets = (
+        ("Identificação", {
+            'fields': ('nome', 'codigo', 'escola', 'ano', 'tipo_ensino', 'sala_identificacao')
+        }),
+        ("AEE", {
+            'fields': ('aee', 'aee_observacoes')
+        }),
     )
-    list_display = ('__str__', 'avaliacao_link', 'alunos_link')
-    search_fields = ('nome', 'escola__nome')
 
     def get_urls(self):
         urls = super().get_urls()
@@ -678,11 +817,6 @@ class TurmaAdmin(admin.ModelAdmin):
                            extra_tags='safe'
                            )
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Lista de Turmas'
-        return super().changelist_view(request, extra_context=extra_context)
-
     def _prepare_context(self, request, turma, alunos, disciplinas, bimestres, bimestre, notas_dict, data_fechamento):
         context = self.admin_site.each_context(request)
         # Format data_fechamento for display
@@ -701,6 +835,56 @@ class TurmaAdmin(admin.ModelAdmin):
                 formatted_data_fechamento = data_fechamento  # Fallback to raw value
 
         return context
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_turma")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_turma"):
+            messages.error(request, "Você não tem permissão para visualizar Turmas.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        if not request.user.has_perm("core.add_turma"):
+            messages.error(request, "Você não tem permissão para adicionar Turmas.")
+            return False
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        if not request.user.has_perm("core.change_turma"):
+            messages.error(request, "Você não tem permissão para editar Turmas.")
+            return False
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        if not request.user.has_perm("core.delete_turma"):
+            messages.error(request, "Você não tem permissão para excluir Turmas.")
+            return False
+        return True
+
+    # ----------------- TRATAMENTO DO 403 -----------------
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            return redirect("admin:core_turma_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            return redirect("admin:core_turma_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            return redirect("admin:core_turma_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- CONTEXTO DA LISTAGEM -----------------
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Lista de Turmas'
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 #############################################################################
@@ -1097,11 +1281,6 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
 
         return holidays
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['title'] = 'Crie um calendário novo ou visualize e edite um calendário!'
-        return super().changelist_view(request, extra_context=extra_context)
-
     def calendario_view(self, request, periodo_id):
         logger.debug(f"[calendario_view] Iniciando para periodo_id={periodo_id}")
 
@@ -1201,17 +1380,130 @@ class PeriodoLetivoAdmin(admin.ModelAdmin):
 
     calendario_link.short_description = 'Calendário'
 
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Avaliações.")
+            return redirect("admin:core_avaliacao_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Avaliações.")
+            return redirect("admin:core_avaliacao_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Avaliações.")
+            return redirect("admin:core_avaliacao_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    def link_avaliacoes(self, obj):
+        url = reverse('admin:core_avaliacao_changelist')
+        return format_html('<a href="{}">Gerenciar Avaliações</a>', url)
+
+    link_avaliacoes.short_description = 'Ações'
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_avaliacao")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_avaliacao"):
+            messages.error(request, "Você não tem permissão para visualizar Avaliações.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_avaliacao")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_avaliacao")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_avaliacao")
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['title'] = 'Crie um calendário novo ou visualize e edite um calendário!'
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Períodos Letivos.")
+            return redirect("admin:core_periodoletivo_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Períodos Letivos.")
+            return redirect("admin:core_periodoletivo_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Períodos Letivos.")
+            return redirect("admin:core_periodoletivo_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    def calendario_link(self, obj):
+        url = reverse('admin:core_periodoletivo_calendario', args=[obj.id])
+        return format_html('<a class="button" href="{}">Gerenciar Calendário</a>', url)
+
+    calendario_link.short_description = 'Calendário'
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_periodoletivo")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_periodoletivo"):
+            messages.error(request, "Você não tem permissão para visualizar Períodos Letivos.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_periodoletivo")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_periodoletivo")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_periodoletivo")
 
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
+class DisciplinaForm(forms.ModelForm):
+    class Meta:
+        model = Disciplina
+        fields = ['nome', 'area_conhecimento', 'carga_horaria']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'placeholder': 'Ex: Matemática, Português, História...',
+                'class': 'form-control'
+            }),
+            'area_conhecimento': forms.Select(attrs={'class': 'form-control'}),
+            'carga_horaria': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'placeholder': 'Ex: 80'
+            }),
+        }
+        help_texts = {
+            'nome': 'Digite o nome completo da disciplina',
+            'area_conhecimento': 'Selecione a área do conhecimento',
+            'carga_horaria': 'Informe a carga horária total em horas',
+        }
+
 @admin.register(Disciplina)
 class DisciplinaAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
+    list_display = ('nome', 'area_conhecimento', 'carga_horaria')
+    search_fields = ('nome', 'area_conhecimento')
+    form = DisciplinaForm
 
-    # search_fields = ('nome',)
-
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         disciplinas = Disciplina.objects.all()
@@ -1219,11 +1511,42 @@ class DisciplinaAdmin(admin.ModelAdmin):
         extra_context['disciplinas'] = disciplinas
         return super().changelist_view(request, extra_context=extra_context)
 
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-        ]
-        return custom_urls + urls
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Disciplinas.")
+            return redirect("admin:core_disciplina_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Disciplinas.")
+            return redirect("admin:core_disciplina_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Disciplinas.")
+            return redirect("admin:core_disciplina_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_disciplina")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_disciplina"):
+            messages.error(request, "Você não tem permissão para visualizar Disciplinas.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_disciplina")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_disciplina")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_disciplina")
 
 
 #############################################################################
@@ -1236,12 +1559,16 @@ class BimestreAdmin(admin.ModelAdmin):
     list_filter = ('ano_letivo',)
     ordering = ('-ano_letivo', 'nome')
 
+    def get_urls(self):
+        urls = super().get_urls()
+        return urls
+
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         bimestres = Bimestre.objects.all().order_by('-ano_letivo', 'nome')
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo Bimestre ou clique em um para modificar'
 
-        # Criar estrutura de dados que o template espera
         bimestres_by_year = {}
         for bimestre in bimestres:
             year = bimestre.ano_letivo
@@ -1253,10 +1580,8 @@ class BimestreAdmin(admin.ModelAdmin):
             bimestres_by_year[year]['bimestres'].append(bimestre)
             bimestres_by_year[year]['total_dias_letivos'] += bimestre.dias_letivo
 
-        # Ordenar os anos
         bimestres_by_year = dict(sorted(bimestres_by_year.items(), reverse=True))
 
-        extra_context = extra_context or {}
         extra_context.update({
             'bimestres_by_year': bimestres_by_year,
             'bimestres_count': bimestres.count(),
@@ -1264,10 +1589,42 @@ class BimestreAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
-    def get_urls(self):
-        urls = super().get_urls()
-        return urls
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Bimestres.")
+            return redirect("admin:core_bimestre_changelist")
+        return super().add_view(request, form_url, extra_context)
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Bimestres.")
+            return redirect("admin:core_bimestre_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Bimestres.")
+            return redirect("admin:core_bimestre_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_bimestre")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_bimestre"):
+            messages.error(request, "Você não tem permissão para visualizar Bimestres.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_bimestre")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_bimestre")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_bimestre")
 
 #############################################################################
 #############################################################################
@@ -1498,25 +1855,6 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
         }
         return TemplateResponse(request, 'admin/core/dashboard.html', context)
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context.update({
-            'title': 'Visão geral do município',
-            'departamentos': DiretoriaEnsino.objects.all(),
-            'total_escolas': Escola.objects.count(),
-            'total_alunos': Aluno.objects.count(),
-            'total_professores': Professor.objects.count(),
-            'escolas': Escola.objects.all(),
-            # defaults para o template até o fetch preencher
-            'alunos_presentes': 0,
-            'alunos_ausentes': 0,
-            'professores_com_chamada': 0,
-            # compat admin
-            'opts': self.model._meta,
-            'app_label': self.model._meta.app_label,
-        })
-        return super().changelist_view(request, extra_context=extra_context)
-
     def reports_view(self, request):
         schools = Escola.objects.all()
         students_by_school = [
@@ -1541,29 +1879,144 @@ class DiretoriaEnsinoAdmin(admin.ModelAdmin):
         return format_html('<a class="button" href="{}">Ver Relatórios</a>', url)
     report_link.short_description = 'Relatórios'
 
+    # ----------------- VIEWS -----------------
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context.update({
+            'title': 'Visão geral do município',
+            'departamentos': DiretoriaEnsino.objects.all(),
+            'total_escolas': Escola.objects.count(),
+            'total_alunos': Aluno.objects.count(),
+            'total_professores': Professor.objects.count(),
+            'escolas': Escola.objects.all(),
+            'alunos_presentes': 0,
+            'alunos_ausentes': 0,
+            'professores_com_chamada': 0,
+            'opts': self.model._meta,
+            'app_label': self.model._meta.app_label,
+        })
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Diretorias de Ensino.")
+            return redirect("admin:core_diretoriaensino_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Diretorias de Ensino.")
+            return redirect("admin:core_diretoriaensino_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Diretorias de Ensino.")
+            return redirect("admin:core_diretoriaensino_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    def report_link(self, obj):
+        url = reverse('admin:core_diretoriaensino_reports')
+        return format_html('<a class="button" href="{}">Ver Relatórios</a>', url)
+
+    report_link.short_description = 'Relatórios'
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_diretoriaensino")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_diretoriaensino"):
+            messages.error(request, "Você não tem permissão para visualizar Diretorias de Ensino.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_diretoriaensino")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_diretoriaensino")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_diretoriaensino")
+
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
+class DiretorFormacaoInline(admin.TabularInline):
+    model = DiretorFormacao
+    extra = 1
+
+class DiretorCursoInline(admin.TabularInline):
+    model = DiretorCurso
+    extra = 1
+from django.contrib import messages
+from django.shortcuts import redirect
+
 @admin.register(Diretor)
 class DiretorAdmin(admin.ModelAdmin):
-    list_display = ("nome", "telefone")
+    list_display = ("nome", "telefone", "efetivo", "inicio_no_cargo", "qtd_formacoes", "qtd_cursos")
+    search_fields = ("nome", "cpf")
+    ordering = ("nome",)
+    fieldsets = (
+        ("Dados de acesso", {"fields": ("nome_usuario", "senha")}),
+        ("Identificação", {"fields": ("nome", "cpf", "data_nascimento", "sexo", "endereco", "telefone")}),
+        ("Cargo", {"fields": ("inicio_no_cargo", "efetivo")}),
+    )
+    inlines = [DiretorFormacaoInline, DiretorCursoInline]
 
-    # search_fields = ("nome", "cpf")
-    # ordering = ("nome",)
-
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['title'] = 'Adicione um novo Diretor ou clique em um para modificar'
         return super().changelist_view(request, extra_context=extra_context)
 
-    # Opcional: desative ações em massa se não forem necessárias
-    def has_add_permission(self, request):
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Diretores.")
+            return redirect("admin:core_diretor_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Diretores.")
+            return redirect("admin:core_diretor_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Diretores.")
+            return redirect("admin:core_diretor_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- CAMPOS DERIVADOS -----------------
+    def qtd_formacoes(self, obj):
+        return obj.formacoes.count()
+    qtd_formacoes.short_description = "Formações"
+
+    def qtd_cursos(self, obj):
+        return obj.cursos.count()
+    qtd_cursos.short_description = "Cursos"
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_diretor")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_diretor"):
+            messages.error(request, "Você não tem permissão para visualizar Diretores.")
+            return False
         return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_diretor")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_diretor")
 
     def has_delete_permission(self, request, obj=None):
-        return True
-
+        return request.user.has_perm("core.delete_diretor")
 
 #############################################################################
 #############################################################################
@@ -1571,18 +2024,23 @@ class DiretorAdmin(admin.ModelAdmin):
 #############################################################################
 class EscolaForm(forms.ModelForm):
     """Formulário personalizado para o modelo Escola."""
+    model = EscolaEstruturaFisica
+    can_delete = False
+    max_num = 1
+    extra = 0
 
-    class Meta:
-        model = Escola
-        fields = '__all__'
-        labels = {
-            'diretoria_ensino': 'Diretoria Regional de Ensino',
-            'diretor': 'Diretor Responsável'
-        }
-        help_texts = {
-            'cnpj': 'Formato: 00.000.000/0000-00',
-            'cep': 'Formato: 00000-000'
-        }
+
+    class EscolaForm(forms.ModelForm):
+        class Meta:
+            model = Escola
+            fields = '__all__'
+            labels = {
+                'diretoria_ensino': 'Diretoria Regional de Ensino',
+                'diretor': 'Diretor Responsável',
+            }
+            help_texts = {
+                'cnpj': 'Formato: 00.000.000/0000-00',
+            }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1605,38 +2063,64 @@ class EscolaForm(forms.ModelForm):
                 self.fields[field_name].required = True
 
     def clean_cnpj(self):
-        """Validação customizada para o CNPJ."""
         cnpj = self.cleaned_data.get('cnpj')
-        if cnpj:
-            # Implementar validação real do CNPJ aqui
-            if len(cnpj) != 18:
-                raise forms.ValidationError("CNPJ deve ter 14 dígitos")
+        if not cnpj:
+            return cnpj
+        # normaliza
+        numeros = re.sub(r'\D', '', cnpj)
+        if len(numeros) != 14:
+            raise forms.ValidationError("CNPJ deve ter 14 dígitos.")
         return cnpj
 
+    def clean_ppp_arquivo(self):
+        f = self.cleaned_data.get('ppp_arquivo')
+        if not f:
+            return f
+        if not str(f.name).lower().endswith('.pdf'):
+            raise forms.ValidationError("Envie o PPP em PDF.")
+        if f.size > 10 * 1024 * 1024:
+            raise forms.ValidationError("Tamanho máximo: 10 MB.")
+        return f
+
 
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
+
+class EscolaEstruturaInline(admin.StackedInline):
+    model = EscolaEstruturaFisica
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Estrutura física"
+
+class EscolaFuncionariosInline(admin.StackedInline):
+    model = EscolaFuncionarios
+    can_delete = False
+    max_num = 1
+    extra = 0
+    verbose_name_plural = "Funcionários"
+
 @admin.register(Escola)
 class EscolaAdmin(admin.ModelAdmin):
-    list_display = ('nome',)  # Adjust based on your fields
+    list_display = ('nome', 'ativa')
     list_filter = ('ativa',)
+    inlines = [EscolaEstruturaInline, EscolaFuncionariosInline]
 
-    # search_fields = ('nome',)
+    fieldsets = (
+        ("Identificação", {
+            'fields': ('nome', 'ativa', 'telefone', 'endereco', 'diretoria_ensino', 'diretor')
+        }),
+        ("Documentos", {
+            'fields': ('cod_cie', 'cnpj', 'apm_ativa', 'ppp_arquivo')
+        }),
+    )
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-
-        escolas = Escola.objects.all()
-
-        ativa = request.GET.get('ativa')
-        if ativa in ['1', '0']:
-            escolas = escolas.filter(ativa=bool(int(ativa)))
-
-        extra_context['title'] = 'Clique no editor do card para visualizar ou modificar'
-        extra_context['escolas'] = escolas
-        return super().changelist_view(request, extra_context=extra_context)
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        EscolaEstruturaFisica.objects.get_or_create(escola=obj)
+        EscolaFuncionarios.objects.get_or_create(escola=obj)
 
     def get_urls(self):
         from django.urls import path
@@ -1665,6 +2149,73 @@ class EscolaAdmin(admin.ModelAdmin):
 
         return redirect('admin:core_escola_changelist')
 
+    # ----------------- VIEWS -----------------
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        escolas = Escola.objects.all()
+
+        ativa = request.GET.get('ativa')
+        if ativa in ['1', '0']:
+            escolas = escolas.filter(ativa=bool(int(ativa)))
+
+        extra_context['title'] = 'Clique no editor do card para visualizar ou modificar'
+        extra_context['escolas'] = escolas
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Escolas.")
+            return redirect("admin:core_escola_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Escolas.")
+            return redirect("admin:core_escola_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Escolas.")
+            return redirect("admin:core_escola_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        EscolaEstruturaFisica.objects.get_or_create(escola=obj)
+        EscolaFuncionarios.objects.get_or_create(escola=obj)
+
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_escola")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_escola"):
+            messages.error(request, "Você não tem permissão para visualizar Escolas.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_escola")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_escola")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_escola")
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+class ProfessorFormacaoInline(admin.TabularInline):
+    model = ProfessorFormacao
+    extra = 1
+
+
+class ProfessorCursoInline(admin.TabularInline):
+    model = ProfessorCurso
+    extra = 1
 
 class ProfessorAdminForm(forms.ModelForm):
     class Meta:
@@ -1686,18 +2237,15 @@ class ProfessorAdminForm(forms.ModelForm):
         self.fields['disciplinas'].queryset = Disciplina.objects.all().order_by('nome')
         self.fields['turmas'].queryset = Turma.objects.all().order_by('nome')
 
-
 @admin.register(Professor)
 class ProfessorAdmin(admin.ModelAdmin):
     form = ProfessorAdminForm
     search_fields = ("nome", "cpf")
     ordering = ("nome",)
     change_list_template = 'admin/core/professor/change_list.html'
-    list_filter = [
-        'turmas',
-        'turmas__escola',
-        'disciplinas',
-    ]
+    list_filter = ['turmas', 'disciplinas']
+
+    inlines = [ProfessorFormacaoInline, ProfessorCursoInline]  # adiciona os campos dinâmicos
 
     class Media:
         css = {
@@ -1709,6 +2257,7 @@ class ProfessorAdmin(admin.ModelAdmin):
             '/static/js/admin_select2.js',
         )
 
+    # ----------------- VIEWS -----------------
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['escolas'] = Escola.objects.all()
@@ -1717,13 +2266,48 @@ class ProfessorAdmin(admin.ModelAdmin):
         extra_context['title'] = "Adicione, edite ou exclua um professor"
         return super().changelist_view(request, extra_context)
 
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            messages.error(request, "Você não tem permissão para adicionar Professores.")
+            return redirect("admin:core_professor_changelist")
+        return super().add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        if not self.has_change_permission(request):
+            messages.error(request, "Você não tem permissão para editar Professores.")
+            return redirect("admin:core_professor_changelist")
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        if not self.has_delete_permission(request):
+            messages.error(request, "Você não tem permissão para excluir Professores.")
+            return redirect("admin:core_professor_changelist")
+        return super().delete_view(request, object_id, extra_context)
+
+    # ----------------- COLUNAS CUSTOM -----------------
     def get_disciplinas(self, obj):
         return ", ".join([disciplina.nome for disciplina in obj.disciplinas.all()])
-
     get_disciplinas.short_description = 'Disciplinas'
 
     def get_turmas(self, obj):
         return ", ".join([turma.nome for turma in obj.turmas.all()])
-
     get_turmas.short_description = 'Turmas'
 
+    # ----------------- PERMISSÕES -----------------
+    def has_module_permission(self, request):
+        return request.user.has_perm("core.view_professor")
+
+    def has_view_permission(self, request, obj=None):
+        if not request.user.has_perm("core.view_professor"):
+            messages.error(request, "Você não tem permissão para visualizar Professores.")
+            return False
+        return True
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("core.add_professor")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("core.change_professor")
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.has_perm("core.delete_professor")

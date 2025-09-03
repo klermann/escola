@@ -1,0 +1,15 @@
+.app-core .model-aluno a::before            { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f19d"; margin-right:.5rem; }
+.app-core .model-professor a::before        { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f51c"; margin-right:.5rem; }
+.app-core .model-diretor a::before          { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f508"; margin-right:.5rem; }
+.app-core .model-turma a::before            { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f0c0"; margin-right:.5rem; }
+.app-core .model-disciplina a::before       { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f02d"; margin-right:.5rem; }
+.app-core .model-escola a::before           { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f549"; margin-right:.5rem; }
+.app-core .model-frequencia a::before       { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f073"; margin-right:.5rem; }
+.app-core .model-avaliacao a::before        { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f559"; margin-right:.5rem; }
+.app-core .model-bimestre a::before         { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f1da"; margin-right:.5rem; }
+.app-core .model-periodoletivo a::before    { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f133"; margin-right:.5rem; }
+.app-core .model-diretoriaensino a::before  { font-family:"Font Awesome 6 Free"; font-weight:900; content:"\f19c"; margin-right:.5rem; }
+
+/* Alternativa sem FA: usar emojis
+.app-core .model-aluno a::before { content:"🧑‍🎓"; margin-right:.5rem; }
+*/

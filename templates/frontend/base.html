@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="{% static 'plugins/animate/animate.css' %}">
     <link rel="stylesheet" href="{% static 'plugins/aos/aos.css' %}">
     <link rel="stylesheet" href="{% static 'plugins/venobox/venobox.css' %}">
+    <link rel="manifest" href="{% url 'manifest' %}">
+    <meta name="theme-color" content="#0d6efd">
+    <link rel="apple-touch-icon" href="{% static 'pwa/icons/icon-192.png' %}">
 
     <!-- CSS Principal -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -86,7 +89,8 @@
 
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin:index' %}" data-restricted><i class="ti-settings mr-1"></i>Admin</a>
+                            <a class="nav-link" href="{% url 'admin:index' %}" data-restricted><i
+                                    class="ti-settings mr-1"></i>Admin</a>
                         </li>
                     </ul>
                 </div>
@@ -212,6 +216,75 @@
 
 <!-- Bloco para JavaScript adicional específico da página -->
 {% block extra_js %}
+    <button id="btnInstall" hidden>Instalar aplicativo</button>
+    <div id="ffxHint" hidden class="alert alert-info"></div>
+
+    <button id="installButton" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000;"
+            class="btn btn-primary">Instalar App
+    </button>
+
+    <script>
+        // Controle manual do botão de instalação
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'block';
+
+            console.log('PWA pode ser instalado!');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+
+            deferredPrompt.prompt();
+            const {outcome} = await deferredPrompt.userChoice;
+
+            if (outcome === 'accepted') {
+                console.log('Usuário aceitou a instalação');
+                installButton.style.display = 'none';
+            }
+
+            deferredPrompt = null;
+        });
+
+        // Verifica se já está instalado
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA foi instalado');
+            installButton.style.display = 'none';
+        });
+    </script>
+    <script>
+        let deferredPrompt;
+        const isFirefox = /firefox/i.test(navigator.userAgent);
+        const isAndroid = /android/i.test(navigator.userAgent);
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('btnInstall').hidden = false; // Chromium
+        });
+
+        // Mensagem específica para Firefox
+        if (isFirefox) {
+            const hint = document.getElementById('ffxHint');
+            hint.hidden = false;
+            hint.textContent = isAndroid
+                ? 'No Firefox para Android: menu ⋮ → Instalar / Adicionar à tela inicial.'
+                : 'No Firefox para desktop não há instalação de PWA. Use Chrome/Edge/Brave para instalar.';
+        }
+
+        document.getElementById('btnInstall')?.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            document.getElementById('btnInstall').hidden = true;
+        });
+    </script>
+
     <script>
         $(document).ready(function () {
             // Armazena a URL que requer login
@@ -305,5 +378,6 @@
         });
     </script>
 {% endblock %}
+<script defer src="{% static 'pwa/pwa-register.js' %}"></script>
 </body>
 </html>

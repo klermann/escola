@@ -33,17 +33,19 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 INSTALLED_APPS = [
-    'site_admin',
-    'core',
+    "site_admin.apps.SiteAdminConfig",   # carrega os MODELOS do site_admin
+    "core.apps.CoreConfig",
+    "pwa",
     "admin_interface",
     "colorfield",
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "site_admin.adminapps.MyAdminConfig",  # substitui o django.contrib.admin
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 ]
+
 # Configurações específicas do admin_interface
 ADMIN_INTERFACE_CONFIG = {
     'theme': 'light',  # Pode ser 'default', 'dark', 'light', etc.
@@ -168,3 +170,26 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configurações PWA
+PWA_APP_NAME = 'Escola – Gestão Acadêmica'
+PWA_APP_DESCRIPTION = "Sistema de gestão acadêmica escolar"
+PWA_APP_THEME_COLOR = '#0d6efd'
+PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_ORIENTATION = 'portrait'
+PWA_APP_START_URL = '/'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/pwa/icons/icon-192.png',
+        'sizes': '192x192',
+        'type': 'image/png'
+    },
+    {
+        'src': '/static/pwa/icons/icon-512.png',
+        'sizes': '512x512',
+        'type': 'image/png'
+    }
+]
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/pwa', 'sw.js')
